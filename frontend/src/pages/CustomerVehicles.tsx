@@ -14,14 +14,13 @@ const schema = z.object({
 });
 type FormValues = z.infer<typeof schema>;
 
-// Mock: in real app these come from API filtered by customer_id
 const MOCK_VEHICLES: Record<string, Vehicle[]> = {
   '1': [
-    { id: 'v1', customer_id: '1', plate: 'ABC-1234', model: '2018 Toyota Camry',  description: 'Rear brake replacement', created_at: '2025-03-01T00:00:00Z' },
-    { id: 'v2', customer_id: '1', plate: 'XYZ-5678', model: '2020 Ford F-150',    description: 'Oil change',             created_at: '2025-04-10T00:00:00Z' },
+    { id: 'v1', customer_id: '1', plate: 'ABC-1234', model: '2018 Toyota Camry', description: 'Rear brake replacement', created_at: '2025-03-01T00:00:00Z' },
+    { id: 'v2', customer_id: '1', plate: 'XYZ-5678', model: '2020 Ford F-150',   description: 'Oil change',            created_at: '2025-04-10T00:00:00Z' },
   ],
   '2': [
-    { id: 'v3', customer_id: '2', plate: 'MNO-9012', model: '2015 Honda Civic',   description: 'AC not working',         created_at: '2025-02-22T00:00:00Z' },
+    { id: 'v3', customer_id: '2', plate: 'MNO-9012', model: '2015 Honda Civic',  description: 'AC not working',        created_at: '2025-02-22T00:00:00Z' },
   ],
   '3': [],
 };
@@ -45,14 +44,28 @@ export default function CustomerVehicles() {
     resolver: zodResolver(schema),
   });
 
-  const openCreate = () => { setEditing(null); reset({ plate: '', model: '', description: '' }); setShowModal(true); };
-  const openEdit = (v: Vehicle) => { setEditing(v); reset({ plate: v.plate, model: v.model, description: v.description ?? '' }); setShowModal(true); };
+  const openCreate = () => {
+    setEditing(null);
+    reset({ plate: '', model: '', description: '' });
+    setShowModal(true);
+  };
+
+  const openEdit = (v: Vehicle) => {
+    setEditing(v);
+    reset({ plate: v.plate, model: v.model, description: v.description ?? '' });
+    setShowModal(true);
+  };
 
   const onSubmit = (values: FormValues) => {
     if (editing) {
       setVehicles((prev) => prev.map((v) => v.id === editing.id ? { ...v, ...values } : v));
     } else {
-      const newV: Vehicle = { id: Date.now().toString(), customer_id: customerId, ...values, created_at: new Date().toISOString() };
+      const newV: Vehicle = {
+        id: `v-${Date.now()}`,
+        customer_id: customerId,
+        ...values,
+        created_at: new Date().toISOString(),
+      };
       setVehicles((prev) => [...prev, newV]);
     }
     setShowModal(false);
@@ -95,8 +108,9 @@ export default function CustomerVehicles() {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
           {vehicles.map((v) => (
-            <div key={v.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-              <div className="flex items-start justify-between mb-3">
+            <div key={v.id} className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 flex flex-col gap-3">
+              {/* Plate + actions */}
+              <div className="flex items-start justify-between">
                 <div
                   className="px-2.5 py-1 rounded-lg text-xs font-bold tracking-wider"
                   style={{ backgroundColor: '#0f1f3d', color: '#f97316' }}
@@ -104,18 +118,46 @@ export default function CustomerVehicles() {
                   {v.plate}
                 </div>
                 <div className="flex gap-2">
-                  <button onClick={() => openEdit(v)} className="text-xs text-gray-400 hover:text-gray-700">{t('common.edit')}</button>
-                  <button onClick={() => setDeleteId(v.id)} className="text-xs text-red-400 hover:text-red-600">{t('common.delete')}</button>
+                  <button onClick={() => openEdit(v)} className="text-xs text-gray-400 hover:text-gray-700">
+                    {t('common.edit')}
+                  </button>
+                  <button onClick={() => setDeleteId(v.id)} className="text-xs text-red-400 hover:text-red-600">
+                    {t('common.delete')}
+                  </button>
                 </div>
               </div>
-              <p className="font-semibold text-gray-800 text-sm">{v.model}</p>
-              {v.description && <p className="text-gray-500 text-xs mt-1 line-clamp-2">{v.description}</p>}
-              <p className="text-gray-300 text-xs mt-3">{new Date(v.created_at).toLocaleDateString()}</p>
+
+              {/* Info */}
+              <div>
+                <p className="font-semibold text-gray-800 text-sm">{v.model}</p>
+                {v.description && (
+                  <p className="text-gray-500 text-xs mt-1 line-clamp-2">{v.description}</p>
+                )}
+                <p className="text-gray-300 text-xs mt-2">{new Date(v.created_at).toLocaleDateString()}</p>
+              </div>
+
+              {/* Work Orders button */}
+              <Link
+                to={`/vehicles/${v.id}/work-orders`}
+                className="mt-auto flex items-center justify-center gap-1.5 py-2 rounded-lg text-xs font-semibold border-2 transition-colors"
+                style={{ borderColor: '#0f1f3d', color: '#0f1f3d' }}
+                onMouseEnter={e => {
+                  e.currentTarget.style.backgroundColor = '#0f1f3d';
+                  e.currentTarget.style.color = '#fff';
+                }}
+                onMouseLeave={e => {
+                  e.currentTarget.style.backgroundColor = 'transparent';
+                  e.currentTarget.style.color = '#0f1f3d';
+                }}
+              >
+                🔧 {t('workOrders.viewOrders')}
+              </Link>
             </div>
           ))}
         </div>
       )}
 
+      {/* Create / Edit modal */}
       {showModal && (
         <Modal title={editing ? t('vehicles.edit') : t('vehicles.new')} onClose={() => setShowModal(false)}>
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -126,13 +168,20 @@ export default function CustomerVehicles() {
               <input {...register('model')} className={inputCls(!!errors.model)} placeholder="2018 Toyota Camry" />
             </Field>
             <Field label={t('vehicles.description')} error={errors.description?.message}>
-              <textarea {...register('description')} className={inputCls(false) + ' resize-none h-20'} placeholder="e.g. rear brake replacement" />
+              <textarea
+                {...register('description')}
+                className={inputCls(false) + ' resize-none h-20'}
+                placeholder="e.g. rear brake replacement"
+              />
             </Field>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+              <button type="button" onClick={() => setShowModal(false)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
                 {t('common.cancel')}
               </button>
-              <button type="submit" className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90" style={{ backgroundColor: '#f97316' }}>
+              <button type="submit"
+                className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90"
+                style={{ backgroundColor: '#f97316' }}>
                 {t('common.save')}
               </button>
             </div>
@@ -140,14 +189,17 @@ export default function CustomerVehicles() {
         </Modal>
       )}
 
+      {/* Delete confirm */}
       {deleteId && (
         <Modal title={t('common.confirmDelete')} onClose={() => setDeleteId(null)}>
           <p className="text-gray-600 text-sm mb-5">{t('common.deleteWarning')}</p>
           <div className="flex justify-end gap-3">
-            <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+            <button onClick={() => setDeleteId(null)}
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
               {t('common.cancel')}
             </button>
-            <button onClick={confirmDelete} className="px-4 py-2 text-sm rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600">
+            <button onClick={confirmDelete}
+              className="px-4 py-2 text-sm rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600">
               {t('common.delete')}
             </button>
           </div>
@@ -157,8 +209,11 @@ export default function CustomerVehicles() {
   );
 }
 
+/* ── helpers ── */
 function inputCls(hasError: boolean) {
-  return `w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${hasError ? 'border-red-400' : 'border-gray-300'}`;
+  return `w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${
+    hasError ? 'border-red-400' : 'border-gray-300'
+  }`;
 }
 
 function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
