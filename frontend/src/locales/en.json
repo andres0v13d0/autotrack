@@ -1,0 +1,58 @@
+{
+  "login": {
+    "title": "Sign In",
+    "email": "Email",
+    "password": "Password",
+    "submit": "Sign In",
+    "error": "Invalid email or password",
+    "emailRequired": "Email is required",
+    "passwordRequired": "Password is required",
+    "passwordMin": "Password must be at least 8 characters"
+  },
+  "nav": {
+    "dashboard": "Dashboard",
+    "users": "Users",
+    "customers": "Customers",
+    "logout": "Logout"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "welcome": "Welcome, {{name}}"
+  },
+  "users": {
+    "title": "Users",
+    "name": "Name",
+    "email": "Email",
+    "role": "Role",
+    "createdAt": "Created At",
+    "loading": "Loading users...",
+    "error": "Failed to load users"
+  },
+  "customers": {
+    "title": "Customers",
+    "new": "New Customer",
+    "edit": "Edit Customer",
+    "name": "Name",
+    "phone": "Phone",
+    "createdAt": "Created At",
+    "vehicles": "Vehicles"
+  },
+  "vehicles": {
+    "title": "Vehicles",
+    "new": "Add Vehicle",
+    "edit": "Edit Vehicle",
+    "plate": "License Plate",
+    "model": "Model",
+    "description": "Description / Complaint",
+    "empty": "No vehicles registered for this customer yet."
+  },
+  "common": {
+    "language": "Language",
+    "edit": "Edit",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "confirmDelete": "Confirm Delete",
+    "deleteWarning": "This action cannot be undone. Are you sure?"
+  }
+}

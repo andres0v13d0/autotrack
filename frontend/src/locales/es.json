@@ -1,0 +1,58 @@
+{
+  "login": {
+    "title": "Iniciar Sesión",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "submit": "Ingresar",
+    "error": "Correo o contraseña inválidos",
+    "emailRequired": "El correo es requerido",
+    "passwordRequired": "La contraseña es requerida",
+    "passwordMin": "La contraseña debe tener al menos 8 caracteres"
+  },
+  "nav": {
+    "dashboard": "Panel",
+    "users": "Usuarios",
+    "customers": "Clientes",
+    "logout": "Cerrar sesión"
+  },
+  "dashboard": {
+    "title": "Panel",
+    "welcome": "Bienvenido, {{name}}"
+  },
+  "users": {
+    "title": "Usuarios",
+    "name": "Nombre",
+    "email": "Correo",
+    "role": "Rol",
+    "createdAt": "Creado",
+    "loading": "Cargando usuarios...",
+    "error": "Error al cargar usuarios"
+  },
+  "customers": {
+    "title": "Clientes",
+    "new": "Nuevo Cliente",
+    "edit": "Editar Cliente",
+    "name": "Nombre",
+    "phone": "Teléfono",
+    "createdAt": "Creado",
+    "vehicles": "Vehículos"
+  },
+  "vehicles": {
+    "title": "Vehículos",
+    "new": "Agregar Vehículo",
+    "edit": "Editar Vehículo",
+    "plate": "Placa",
+    "model": "Modelo",
+    "description": "Descripción / Queja",
+    "empty": "Este cliente no tiene vehículos registrados aún."
+  },
+  "common": {
+    "language": "Idioma",
+    "edit": "Editar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "confirmDelete": "Confirmar eliminación",
+    "deleteWarning": "Esta acción no se puede deshacer. ¿Estás seguro?"
+  }
+}
