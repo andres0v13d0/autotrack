@@ -7,7 +7,21 @@
     "error": "Invalid email or password",
     "emailRequired": "Email is required",
     "passwordRequired": "Password is required",
-    "passwordMin": "Password must be at least 8 characters"
+    "passwordMin": "Password must be at least 8 characters",
+    "noAccount": "Don't have an account?",
+    "registerLink": "Sign Up"
+  },
+  "register": {
+    "title": "Create Account",
+    "subtitle": "Join our platform and start managing your shop",
+    "firstName": "First Name",
+    "lastName": "Last Name",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "submit": "Create Account",
+    "haveAccount": "Already have an account?",
+    "loginLink": "Sign In"
   },
   "nav": {
     "dashboard": "Dashboard",

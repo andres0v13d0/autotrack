@@ -23,13 +23,22 @@ export class UsersService {
     return result;
   }
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto | any) {
     const existing = await this.usersRepository.findOne({
       where: { email: dto.email },
     });
     if (existing) throw new ConflictException('Email already in use');
 
-    const password_hash = await bcrypt.hash(dto.password, 10);
+    // Check if password_hash is already provided (from auth service)
+    let password_hash: string;
+    if (dto.password_hash) {
+      password_hash = dto.password_hash;
+    } else if (dto.password) {
+      password_hash = await bcrypt.hash(dto.password, 10);
+    } else {
+      throw new Error('Password or password_hash is required');
+    }
+
     const user = this.usersRepository.create({
       name: dto.name,
       email: dto.email,

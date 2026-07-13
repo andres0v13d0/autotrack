@@ -9,6 +9,18 @@
     "passwordRequired": "La contraseña es requerida",
     "passwordMin": "La contraseña debe tener al menos 8 caracteres"
   },
+  "register": {
+    "title": "Crear Cuenta",
+    "subtitle": "Únete a nuestra plataforma y comienza a gestionar tu taller",
+    "firstName": "Nombre",
+    "lastName": "Apellido",
+    "email": "Correo electrónico",
+    "password": "Contraseña",
+    "confirmPassword": "Confirmar Contraseña",
+    "submit": "Crear Cuenta",
+    "haveAccount": "¿Ya tienes una cuenta?",
+    "loginLink": "Inicia Sesión"
+  },
   "nav": {
     "dashboard": "Panel",
     "users": "Usuarios",
