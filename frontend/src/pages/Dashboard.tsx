@@ -41,7 +41,7 @@ export default function Dashboard() {
             border: `1px solid ${roleBadgeColor[user?.role ?? 'front_desk']}55`,
           }}
         >
-          {user?.role}
+          {t(`roles.${user?.role}`)}
         </span>
       </div>
 

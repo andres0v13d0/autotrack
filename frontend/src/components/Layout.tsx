@@ -54,12 +54,12 @@ export default function Layout({ children }: { children: ReactNode }) {
 
   return (
     <div className="min-h-screen flex flex-col lg:flex-row bg-slate-50">
-      {/* PASO 1: Sidebar blanco con fondo blanco e imagotipo arriba */}
-      <aside className="hidden lg:flex lg:w-64 flex-col bg-white border-r border-slate-200">
-        {/* Imagotipo arriba */}
-        <div className="px-4 py-4 border-b border-slate-200">
+      {/* SIDEBAR: Azul oscuro con imagotipo_blanco arriba */}
+      <aside className="hidden lg:flex lg:w-64 flex-col bg-slate-900 border-r border-slate-800 shadow-xl">
+        {/* Imagotipo blanco arriba */}
+        <div className="px-4 py-4 border-b border-slate-800/50">
           <img 
-            src="/imagotipo.png" 
+            src="/imagotipo_blanco.png" 
             alt="AutoTrack" 
             className="h-10 object-contain"
           />
@@ -90,10 +90,10 @@ export default function Layout({ children }: { children: ReactNode }) {
         </nav>
 
         {/* Solo logout */}
-        <div className="px-2 py-4 border-t border-slate-200">
+        <div className="px-2 py-4 border-t border-slate-800/50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
           >
             <LogOut size={18} />
             <span>{t('nav.logout')}</span>
@@ -116,9 +116,9 @@ export default function Layout({ children }: { children: ReactNode }) {
                 {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
               </button>
 
-              {/* Logo imagotipo (solo mobile) */}
+              {/* Logo imagotipo blanco (solo mobile) */}
               <img 
-                src="/imagotipo.png" 
+                src="/imagotipo_blanco.png" 
                 alt="AutoTrack" 
                 className="lg:hidden h-8 object-contain"
               />
@@ -149,7 +149,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     <div className="px-4 py-3 bg-slate-50 border-b border-slate-200">
                       <p className="text-sm font-semibold text-slate-900">{user?.name}</p>
                       <p className="text-xs text-slate-600">{user?.email}</p>
-                      <p className="text-xs text-slate-500 mt-1 capitalize">Role: {user?.role}</p>
+                      <p className="text-xs text-slate-500 mt-1">{t(`roles.${user?.role}`)}</p>
                     </div>
                     <button
                       onClick={() => {

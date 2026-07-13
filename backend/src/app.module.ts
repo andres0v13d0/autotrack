@@ -16,16 +16,32 @@ import { Vehicle } from './modules/vehicles/vehicle.entity';
     ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
-      useFactory: (config: ConfigService) => ({
-        type: 'postgres',
-        host: config.get<string>('DATABASE_HOST', 'localhost'),
-        port: config.get<number>('DATABASE_PORT', 5432),
-        username: config.get<string>('DATABASE_USER', 'postgres'),
-        password: config.get<string>('DATABASE_PASSWORD', ''),
-        database: config.get<string>('DATABASE_NAME', 'shop_management'),
-        entities: [User, Customer, Vehicle],
-        synchronize: true,
-      }),
+      useFactory: (config: ConfigService) => {
+        const databaseUrl = config.get<string>('DATABASE_URL');
+        
+        // Si hay DATABASE_URL (producción), usarlo
+        if (databaseUrl) {
+          return {
+            type: 'postgres',
+            url: databaseUrl,
+            entities: [User, Customer, Vehicle],
+            synchronize: true,
+            ssl: true,
+          };
+        }
+        
+        // Si no, usar variables individuales (desarrollo local)
+        return {
+          type: 'postgres',
+          host: config.get<string>('DATABASE_HOST', 'localhost'),
+          port: config.get<number>('DATABASE_PORT', 5432),
+          username: config.get<string>('DATABASE_USER', 'postgres'),
+          password: config.get<string>('DATABASE_PASSWORD', ''),
+          database: config.get<string>('DATABASE_NAME', 'shop_management'),
+          entities: [User, Customer, Vehicle],
+          synchronize: true,
+        };
+      },
       inject: [ConfigService],
     }),
     UsersModule,

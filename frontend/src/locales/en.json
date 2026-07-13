@@ -29,6 +29,11 @@
     "customers": "Customers",
     "logout": "Logout"
   },
+  "roles": {
+    "admin": "Administrator",
+    "front_desk": "Front Desk",
+    "technician": "Technician"
+  },
   "dashboard": {
     "title": "Dashboard",
     "welcome": "Welcome, {{name}}"

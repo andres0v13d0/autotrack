@@ -27,6 +27,11 @@
     "customers": "Clientes",
     "logout": "Cerrar sesión"
   },
+  "roles": {
+    "admin": "Administrador",
+    "front_desk": "Recepción",
+    "technician": "Técnico"
+  },
   "dashboard": {
     "title": "Panel",
     "welcome": "Bienvenido, {{name}}"
