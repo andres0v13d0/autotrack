@@ -1,8 +1,6 @@
 export type WorkOrderItemType = 'part' | 'labor';
-
-export type PaymentStatus = 'paid' | 'credit' | 'partial' | 'pending';
-
-export type WorkOrderStatus = 'open' | 'in_progress' | 'completed';
+export type PaymentMethod = 'cash' | 'card' | 'check' | 'other';
+export type PaymentStatus = 'pending' | 'partial' | 'paid';
 
 export interface WorkOrderItem {
   id: string;
@@ -14,13 +12,27 @@ export interface WorkOrderItem {
 
 export interface WorkOrder {
   id: string;
-  vehicleId: string;
-  descriptionNeeded: string;
-  status: WorkOrderStatus;
-  paymentStatus: PaymentStatus;
+  vehicle_id: string;
+  description_needed: string;
   items: WorkOrderItem[];
   subtotal: number;
+  tax_rate: number;
   tax: number;
   total: number;
-  createdAt: string;
+  created_at: string;
+  // Derived fields (calculated on frontend from payments)
+  amountPaid?: number;
+  balanceDue?: number;
+  paymentStatus?: 'pending' | 'partial' | 'paid';
 }
+
+// Frontend mappers untuk compatibilidad dengan UI
+export const mapWorkOrderToUI = (order: WorkOrder) => ({
+  ...order,
+  vehicleId: order.vehicle_id,
+  descriptionNeeded: order.description_needed,
+  createdAt: order.created_at,
+});
+
+export const mapWorkOrderItemToUI = (item: WorkOrderItem) => item;
+

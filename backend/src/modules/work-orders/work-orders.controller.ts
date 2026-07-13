@@ -1,0 +1,52 @@
+import {
+  Controller,
+  Get,
+  Post,
+  Delete,
+  Body,
+  Param,
+  UseGuards,
+  Request,
+} from '@nestjs/common';
+import { WorkOrdersService } from './work-orders.service';
+import { CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { AddItemDto } from './dto/add-item.dto';
+import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
+import { RolesGuard } from '../../common/guards/roles.guard';
+import { Roles } from '../../common/decorators/roles.decorator';
+
+@Controller('work-orders')
+@UseGuards(JwtAuthGuard, RolesGuard)
+export class WorkOrdersController {
+  constructor(private workOrdersService: WorkOrdersService) {}
+
+  @Post()
+  @Roles('admin', 'front_desk')
+  create(@Body() dto: CreateWorkOrderDto, @Request() req) {
+    return this.workOrdersService.create(dto, req.user.id);
+  }
+
+  @Get(':id')
+  @Roles('admin', 'front_desk', 'technician')
+  findOne(@Param('id') id: string) {
+    return this.workOrdersService.findOne(id);
+  }
+
+  @Get('vehicle/:vehicleId')
+  @Roles('admin', 'front_desk', 'technician')
+  findByVehicle(@Param('vehicleId') vehicleId: string) {
+    return this.workOrdersService.findByVehicle(vehicleId);
+  }
+
+  @Post(':id/items')
+  @Roles('admin', 'front_desk', 'technician')
+  addItem(@Param('id') id: string, @Body() dto: AddItemDto) {
+    return this.workOrdersService.addItem(id, dto);
+  }
+
+  @Delete(':id/items/:itemId')
+  @Roles('admin', 'front_desk', 'technician')
+  removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
+    return this.workOrdersService.removeItem(workOrderId, itemId);
+  }
+}

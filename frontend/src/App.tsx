@@ -8,6 +8,8 @@ import Dashboard from './pages/Dashboard';
 import Users from './pages/Users';
 import Customers from './pages/Customers';
 import CustomerVehicles from './pages/CustomerVehicles';
+import VehicleWorkOrders from './pages/VehicleWorkOrders';
+import WorkOrderDetail from './pages/WorkOrderDetail';
 
 const queryClient = new QueryClient();
 
@@ -23,6 +25,8 @@ export default function App() {
             <Route path="/users" element={<ProtectedRoute allowedRoles={['admin']}><Users /></ProtectedRoute>} />
             <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
             <Route path="/customers/:id/vehicles" element={<ProtectedRoute><CustomerVehicles /></ProtectedRoute>} />
+            <Route path="/vehicles/:vehicleId/work-orders" element={<ProtectedRoute><VehicleWorkOrders /></ProtectedRoute>} />
+            <Route path="/vehicles/:vehicleId/work-orders/:workOrderId" element={<ProtectedRoute><WorkOrderDetail /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

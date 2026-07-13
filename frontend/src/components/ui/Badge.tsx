@@ -4,11 +4,10 @@ const styles: Record<PaymentStatus, { backgroundColor: string; color: string }> 
   paid:    { backgroundColor: '#dcfce7', color: '#16a34a' },
   partial: { backgroundColor: '#fef9c3', color: '#a16207' },
   pending: { backgroundColor: '#fee2e2', color: '#dc2626' },
-  credit:  { backgroundColor: '#dbeafe', color: '#1d4ed8' },
 };
 
 const labels: Record<PaymentStatus, string> = {
-  paid: 'Paid', partial: 'Partial', pending: 'Pending', credit: 'Credit',
+  paid: 'Paid', partial: 'Partial', pending: 'Pending',
 };
 
 interface Props {

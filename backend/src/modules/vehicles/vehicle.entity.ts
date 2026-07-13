@@ -5,8 +5,10 @@ import {
   CreateDateColumn,
   ManyToOne,
   JoinColumn,
+  OneToMany,
 } from 'typeorm';
 import { Customer } from '../customers/customer.entity';
+import { WorkOrder } from '../work-orders/work-order.entity';
 
 @Entity('vehicles')
 export class Vehicle {
@@ -33,4 +35,7 @@ export class Vehicle {
 
   @CreateDateColumn()
   created_at: Date;
+
+  @OneToMany(() => WorkOrder, (workOrder) => workOrder.vehicle)
+  workOrders: WorkOrder[];
 }

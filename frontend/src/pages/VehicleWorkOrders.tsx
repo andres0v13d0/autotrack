@@ -110,10 +110,10 @@ export default function VehicleWorkOrders() {
               {orders.map((wo, i) => (
                 <tr key={wo.id} className="border-t border-gray-100 hover:bg-orange-50/40 transition-colors"
                   style={{ backgroundColor: i % 2 === 0 ? '#fff' : '#fafafa' }}>
-                  <td className="px-5 py-3.5 text-gray-500">{new Date(wo.createdAt).toLocaleDateString()}</td>
-                  <td className="px-5 py-3.5 text-gray-700 max-w-xs truncate">{wo.descriptionNeeded}</td>
+                  <td className="px-5 py-3.5 text-gray-500">{new Date(wo.created_at).toLocaleDateString()}</td>
+                  <td className="px-5 py-3.5 text-gray-700 max-w-xs truncate">{wo.description_needed}</td>
                   <td className="px-5 py-3.5 font-semibold" style={{ color: '#0f1f3d' }}>${wo.total.toFixed(2)}</td>
-                  <td className="px-5 py-3.5"><Badge status={wo.paymentStatus} /></td>
+                  <td className="px-5 py-3.5"><Badge status="pending" /></td>
                   <td className="px-5 py-3.5 text-right">
                     <Link to={`/vehicles/${vehicleId}/work-orders/${wo.id}`}
                       className="text-xs font-semibold text-orange-500 hover:text-orange-700">

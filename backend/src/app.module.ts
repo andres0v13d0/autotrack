@@ -7,9 +7,14 @@ import { UsersModule } from './modules/users/users.module';
 import { AuthModule } from './modules/auth/auth.module';
 import { CustomersModule } from './modules/customers/customers.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
+import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
+import { PaymentsModule } from './modules/payments/payments.module';
 import { User } from './modules/users/user.entity';
 import { Customer } from './modules/customers/customer.entity';
 import { Vehicle } from './modules/vehicles/vehicle.entity';
+import { WorkOrder } from './modules/work-orders/work-order.entity';
+import { WorkOrderItem } from './modules/work-orders/work-order-item.entity';
+import { Payment } from './modules/payments/payment.entity';
 
 @Module({
   imports: [
@@ -18,19 +23,21 @@ import { Vehicle } from './modules/vehicles/vehicle.entity';
       imports: [ConfigModule],
       useFactory: (config: ConfigService) => {
         const databaseUrl = config.get<string>('DATABASE_URL');
-        
-        // Si hay DATABASE_URL (producción), usarlo
-        if (databaseUrl) {
+        const nodeEnv = config.get<string>('NODE_ENV', 'development');
+
+        // Producción: usar DATABASE_URL si existe y es válida
+        if (nodeEnv === 'production' && databaseUrl && databaseUrl.startsWith('postgresql://')) {
           return {
             type: 'postgres',
             url: databaseUrl,
-            entities: [User, Customer, Vehicle],
+            entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment],
             synchronize: true,
-            ssl: true,
+            ssl: { rejectUnauthorized: false },
+            logging: false,
           };
         }
-        
-        // Si no, usar variables individuales (desarrollo local)
+
+        // Desarrollo: siempre usar credenciales individuales
         return {
           type: 'postgres',
           host: config.get<string>('DATABASE_HOST', 'localhost'),
@@ -38,8 +45,9 @@ import { Vehicle } from './modules/vehicles/vehicle.entity';
           username: config.get<string>('DATABASE_USER', 'postgres'),
           password: config.get<string>('DATABASE_PASSWORD', ''),
           database: config.get<string>('DATABASE_NAME', 'shop_management'),
-          entities: [User, Customer, Vehicle],
+          entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment],
           synchronize: true,
+          logging: true,
         };
       },
       inject: [ConfigService],
@@ -48,6 +56,8 @@ import { Vehicle } from './modules/vehicles/vehicle.entity';
     AuthModule,
     CustomersModule,
     VehiclesModule,
+    WorkOrdersModule,
+    PaymentsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

@@ -4,16 +4,15 @@ import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
 import Layout from '../components/Layout';
-import Badge from '../components/ui/Badge';
 import Field, { inputCls } from '../components/ui/Field';
 import { workOrdersService } from '../services/workOrders.service';
-import { TAX_RATE_LABEL } from '../config/constants';
-import type { PaymentStatus, WorkOrderItemType } from '../types/workOrder';
+import { paymentsService } from '../services/payments.service';
+import type { WorkOrderItemType, PaymentMethod } from '../types/workOrder';
 
-const MOCK_VEHICLES: Record<string, { plate: string; model: string; customerId: string }> = {
-  v1: { plate: 'ABC-1234', model: '2018 Toyota Camry', customerId: '1' },
-  v2: { plate: 'XYZ-5678', model: '2020 Ford F-150',   customerId: '1' },
-  v3: { plate: 'MNO-9012', model: '2015 Honda Civic',  customerId: '2' },
+const MOCK_VEHICLES: Record<string, { plate: string; model: string; customerId: string; customerName: string }> = {
+  v1: { plate: 'ABC-1234', model: '2018 Toyota Camry', customerId: 'c1', customerName: 'John Doe' },
+  v2: { plate: 'XYZ-5678', model: '2020 Ford F-150',   customerId: 'c1', customerName: 'John Doe' },
+  v3: { plate: 'MNO-9012', model: '2015 Honda Civic',  customerId: 'c2', customerName: 'Jane Smith' },
 };
 
 interface ItemForm {
@@ -23,26 +22,45 @@ interface ItemForm {
   qty: string;
 }
 
+interface PaymentForm {
+  amount: string;
+  method: PaymentMethod;
+  date: string;
+}
+
 export default function WorkOrderDetail() {
   const { vehicleId = '', workOrderId = '' } = useParams<{ vehicleId: string; workOrderId: string }>();
   const { t } = useTranslation();
   const qc = useQueryClient();
   const vehicle = MOCK_VEHICLES[vehicleId];
   const [pdfToast, setPdfToast] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<ItemForm>({
+  const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
     defaultValues: { type: 'part', qty: '1' },
   });
 
+  const { register: registerPayment, handleSubmit: handlePaymentSubmit, reset: resetPayment, formState: { errors: paymentErrors } } = useForm<PaymentForm>({
+    defaultValues: { method: 'cash', date: new Date().toISOString().split('T')[0] },
+  });
+
   const qKey = ['work-order', workOrderId];
+  const balanceKey = ['order-balance', workOrderId];
 
   const { data: order, isLoading } = useQuery({
     queryKey: qKey,
     queryFn: () => workOrdersService.getOne(workOrderId),
   });
 
+  const { data: balance } = useQuery({
+    queryKey: balanceKey,
+    queryFn: () => paymentsService.getOrderBalance(workOrderId),
+    enabled: !!order,
+  });
+
   const invalidate = () => {
     qc.invalidateQueries({ queryKey: qKey });
+    qc.invalidateQueries({ queryKey: balanceKey });
     qc.invalidateQueries({ queryKey: ['work-orders', vehicleId] });
   };
 
@@ -54,7 +72,7 @@ export default function WorkOrderDetail() {
         price: parseFloat(values.price),
         qty: parseInt(values.qty, 10),
       }),
-    onSuccess: () => { invalidate(); reset({ type: 'part', name: '', price: '', qty: '1' }); },
+    onSuccess: () => { invalidate(); resetItem({ type: 'part', name: '', price: '', qty: '1' }); },
   });
 
   const removeItemMutation = useMutation({
@@ -62,9 +80,10 @@ export default function WorkOrderDetail() {
     onSuccess: invalidate,
   });
 
-  const paymentMutation = useMutation({
-    mutationFn: (status: PaymentStatus) => workOrdersService.updatePaymentStatus(workOrderId, status),
-    onSuccess: invalidate,
+  const addPaymentMutation = useMutation({
+    mutationFn: (values: PaymentForm) =>
+      paymentsService.create(workOrderId, parseFloat(values.amount), values.method, values.date),
+    onSuccess: () => { invalidate(); setShowPaymentForm(false); resetPayment(); },
   });
 
   const handlePdf = () => {
@@ -88,18 +107,18 @@ export default function WorkOrderDetail() {
     <Layout>
       {/* Breadcrumb */}
       <div className="mb-4 flex items-center gap-2 text-sm text-gray-500 flex-wrap">
-        <Link to="/customers" className="text-orange-500 hover:text-orange-700">{t('customers.title')}</Link>
+        <Link to="/customers" className="text-orange-500 hover:text-orange-700">Customers</Link>
         <span>/</span>
         {vehicle && (
           <>
             <Link to={`/customers/${vehicle.customerId}/vehicles`} className="text-orange-500 hover:text-orange-700">
-              {t('vehicles.title')}
+              Vehicles
             </Link>
             <span>/</span>
           </>
         )}
         <Link to={`/vehicles/${vehicleId}/work-orders`} className="text-orange-500 hover:text-orange-700">
-          {t('workOrders.title')}
+          Work Orders
         </Link>
         <span>/</span>
         <span className="text-gray-400 text-xs font-mono">{order.id}</span>
@@ -119,10 +138,12 @@ export default function WorkOrderDetail() {
               {vehicle?.model}
             </h1>
           </div>
-          <p className="text-sm text-gray-500">{order.descriptionNeeded}</p>
+          <p className="text-sm text-gray-500">{order.description_needed}</p>
         </div>
         <div className="flex items-center gap-3">
-          <Badge status={order.paymentStatus} className="text-sm px-3 py-1" />
+          <span className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ backgroundColor: '#0f1f3d' }}>
+            {balance?.paymentStatus || 'pending'}
+          </span>
           <button
             onClick={handlePdf}
             className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold border-2 transition-colors"
@@ -196,26 +217,26 @@ export default function WorkOrderDetail() {
           {/* Add item form */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <h2 className="font-semibold text-sm mb-4" style={{ color: '#0f1f3d' }}>{t('workOrders.addItem')}</h2>
-            <form onSubmit={handleSubmit((v) => addItemMutation.mutate(v))}
+            <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))}
               className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
-              <Field label={t('workOrders.type')} error={errors.type?.message}>
-                <select {...register('type', { required: true })} className={inputCls(!!errors.type)}>
+              <Field label={t('workOrders.type')} error={itemErrors.type?.message}>
+                <select {...registerItem('type', { required: true })} className={inputCls(!!itemErrors.type)}>
                   <option value="part">{t('workOrders.itemType.part')}</option>
                   <option value="labor">{t('workOrders.itemType.labor')}</option>
                 </select>
               </Field>
-              <Field label={t('workOrders.itemName')} error={errors.name?.message}>
-                <input {...register('name', { required: true })}
-                  className={inputCls(!!errors.name)} placeholder="Brake pads" />
+              <Field label={t('workOrders.itemName')} error={itemErrors.name?.message}>
+                <input {...registerItem('name', { required: true })}
+                  className={inputCls(!!itemErrors.name)} placeholder="Brake pads" />
               </Field>
-              <Field label={t('workOrders.price')} error={errors.price?.message}>
-                <input {...register('price', { required: true, min: 0.01 })} type="number" step="0.01" min="0.01"
-                  className={inputCls(!!errors.price)} placeholder="0.00" />
+              <Field label={t('workOrders.price')} error={itemErrors.price?.message}>
+                <input {...registerItem('price', { required: true, min: 0.01 })} type="number" step="0.01" min="0.01"
+                  className={inputCls(!!itemErrors.price)} placeholder="0.00" />
               </Field>
-              <Field label={t('workOrders.qty')} error={errors.qty?.message}>
+              <Field label={t('workOrders.qty')} error={itemErrors.qty?.message}>
                 <div className="flex gap-2">
-                  <input {...register('qty', { required: true, min: 1 })} type="number" min="1"
-                    className={inputCls(!!errors.qty)} placeholder="1" />
+                  <input {...registerItem('qty', { required: true, min: 1 })} type="number" min="1"
+                    className={inputCls(!!itemErrors.qty)} placeholder="1" />
                   <button type="submit" disabled={addItemMutation.isPending}
                     className="shrink-0 px-4 py-2.5 rounded-lg text-white text-sm font-semibold hover:opacity-90 disabled:opacity-60"
                     style={{ backgroundColor: '#f97316' }}>
@@ -227,7 +248,7 @@ export default function WorkOrderDetail() {
           </div>
         </div>
 
-        {/* Right — summary card */}
+        {/* Right — summary + payments */}
         <div className="space-y-4">
           {/* Totals */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
@@ -235,40 +256,78 @@ export default function WorkOrderDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>{t('workOrders.subtotal')}</span>
-                <span>${order.subtotal.toFixed(2)}</span>
+                <span>${order?.subtotal.toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>{t('workOrders.tax')} ({TAX_RATE_LABEL})</span>
-                <span>${order.tax.toFixed(2)}</span>
+                <span>{t('workOrders.tax')} ({(order?.tax_rate ? order.tax_rate * 100 : 0).toFixed(2)}%)</span>
+                <span>${order?.tax.toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between font-bold text-base"
                 style={{ color: '#0f1f3d' }}>
                 <span>{t('workOrders.total')}</span>
-                <span>${order.total.toFixed(2)}</span>
+                <span>${order?.total.toFixed(2)}</span>
               </div>
+
+              {balance && (
+                <>
+                  <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between text-gray-600">
+                    <span>Amount Paid</span>
+                    <span>${balance.amountPaid.toFixed(2)}</span>
+                  </div>
+                  <div className={`flex justify-between font-bold text-base ${balance.balanceDue! > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                    <span>Balance Due</span>
+                    <span>${balance.balanceDue!.toFixed(2)}</span>
+                  </div>
+                </>
+              )}
             </div>
           </div>
 
-          {/* Payment status selector */}
+          {/* Payment form */}
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
-            <h2 className="font-semibold text-sm mb-3" style={{ color: '#0f1f3d' }}>{t('workOrders.paymentStatus')}</h2>
-            <div className="grid grid-cols-2 gap-2">
-              {(['paid', 'partial', 'pending', 'credit'] as PaymentStatus[]).map((s) => (
+            <div className="flex items-center justify-between mb-3">
+              <h2 className="font-semibold text-sm" style={{ color: '#0f1f3d' }}>Record Payment</h2>
+              {!showPaymentForm && balance && balance.balanceDue > 0 && (
                 <button
-                  key={s}
-                  onClick={() => paymentMutation.mutate(s)}
-                  disabled={paymentMutation.isPending}
-                  className="py-2 rounded-lg text-xs font-semibold border-2 transition-all"
-                  style={
-                    order.paymentStatus === s
-                      ? { backgroundColor: '#0f1f3d', borderColor: '#0f1f3d', color: '#fff' }
-                      : { backgroundColor: 'transparent', borderColor: '#e5e7eb', color: '#6b7280' }
-                  }
-                >
-                  {t(`workOrders.status.${s}`)}
+                  onClick={() => setShowPaymentForm(true)}
+                  className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90"
+                  style={{ backgroundColor: '#f97316' }}>
+                  + Add
                 </button>
-              ))}
+              )}
             </div>
+
+            {showPaymentForm && (
+              <form onSubmit={handlePaymentSubmit((v) => addPaymentMutation.mutate(v))} className="space-y-3">
+                <Field label="Amount" error={paymentErrors.amount?.message}>
+                  <input {...registerPayment('amount', { required: true, min: 0.01 })} type="number" step="0.01" min="0.01"
+                    className={inputCls(!!paymentErrors.amount)} placeholder="0.00" />
+                </Field>
+                <Field label="Method" error={paymentErrors.method?.message}>
+                  <select {...registerPayment('method', { required: true })} className={inputCls(!!paymentErrors.method)}>
+                    <option value="cash">Cash</option>
+                    <option value="card">Card</option>
+                    <option value="check">Check</option>
+                    <option value="other">Other</option>
+                  </select>
+                </Field>
+                <Field label="Date" error={paymentErrors.date?.message}>
+                  <input {...registerPayment('date', { required: true })} type="date"
+                    className={inputCls(!!paymentErrors.date)} />
+                </Field>
+                <div className="flex justify-end gap-2">
+                  <button type="button" onClick={() => setShowPaymentForm(false)}
+                    className="px-3 py-2 text-xs rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+                    Cancel
+                  </button>
+                  <button type="submit" disabled={addPaymentMutation.isPending}
+                    className="px-3 py-2 text-xs rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60"
+                    style={{ backgroundColor: '#f97316' }}>
+                    {addPaymentMutation.isPending ? '...' : 'Save'}
+                  </button>
+                </div>
+              </form>
+            )}
           </div>
         </div>
       </div>
