@@ -54,7 +54,8 @@
     "name": "Name",
     "phone": "Phone",
     "createdAt": "Created At",
-    "vehicles": "Vehicles"
+    "vehicles": "Vehicles",
+    "empty": "No customers found"
   },
   "vehicles": {
     "title": "Vehicles",
@@ -63,7 +64,10 @@
     "plate": "License Plate",
     "model": "Model",
     "description": "Description / Complaint",
-    "empty": "No vehicles registered for this customer yet."
+    "empty": "No vehicles registered for this customer yet.",
+    "editVehicle": "Edit Vehicle",
+    "addNewVehicle": "Add New Vehicle",
+    "noVehicles": "No vehicles registered yet"
   },
   "common": {
     "language": "Language",

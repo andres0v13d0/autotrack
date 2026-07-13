@@ -52,7 +52,8 @@
     "name": "Nombre",
     "phone": "Teléfono",
     "createdAt": "Creado",
-    "vehicles": "Vehículos"
+    "vehicles": "Vehículos",
+    "empty": "No hay clientes registrados"
   },
   "vehicles": {
     "title": "Vehículos",
@@ -61,7 +62,10 @@
     "plate": "Placa",
     "model": "Modelo",
     "description": "Descripción / Queja",
-    "empty": "Este cliente no tiene vehículos registrados aún."
+    "empty": "Este cliente no tiene vehículos registrados aún.",
+    "editVehicle": "Editar Vehículo",
+    "addNewVehicle": "Agregar Nuevo Vehículo",
+    "noVehicles": "Sin vehículos registrados"
   },
   "common": {
     "language": "Idioma",

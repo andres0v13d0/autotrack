@@ -93,7 +93,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         <div className="px-2 py-4 border-t border-slate-800/50">
           <button
             onClick={handleLogout}
-            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all"
+            className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-slate-300 hover:text-white hover:bg-slate-800 transition-all cursor-pointer"
           >
             <LogOut size={18} />
             <span>{t('nav.logout')}</span>
@@ -132,7 +132,7 @@ export default function Layout({ children }: { children: ReactNode }) {
               <div className="relative">
                 <button
                   onClick={() => setUserMenuOpen(!userMenuOpen)}
-                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors"
+                  className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                 >
                   <div
                     className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
@@ -156,7 +156,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                         handleLogout();
                         setUserMenuOpen(false);
                       }}
-                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                      className="w-full flex items-center gap-2 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer"
                     >
                       <LogOut size={16} />
                       <span>{t('nav.logout')}</span>
@@ -219,7 +219,7 @@ export default function Layout({ children }: { children: ReactNode }) {
                     handleLogout();
                     closeSidebar();
                   }}
-                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all"
+                  className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-all cursor-pointer"
                 >
                   <LogOut size={18} />
                   <span>{t('nav.logout')}</span>

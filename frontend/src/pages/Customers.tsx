@@ -3,171 +3,423 @@ import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { Edit2, Trash2, Eye, Plus } from 'lucide-react';
 import Layout from '../components/Layout';
-import type { Customer } from '../types';
+import Table from '../components/ui/Table';
+import type { TableColumn, TableAction } from '../components/ui/Table';
+import Field, { inputCls } from '../components/ui/Field';
+import Modal from '../components/ui/Modal';
+import { customersService } from '../services/customers.service';
+import { vehiclesService } from '../services/vehicles.service';
+import type { Customer, Vehicle } from '../types';
 
-const schema = z.object({
+const customerSchema = z.object({
   name: z.string().min(2),
   phone: z.string().regex(/^\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}$/, 'Invalid US phone'),
 });
-type FormValues = z.infer<typeof schema>;
+type CustomerFormValues = z.infer<typeof customerSchema>;
 
-const INITIAL_CUSTOMERS: Customer[] = [
-  { id: '1', name: 'Robert Miller',   phone: '(305) 555-1001', created_at: '2025-01-15T00:00:00Z', vehicles: [] },
-  { id: '2', name: 'Diana Fuentes',   phone: '(786) 555-2002', created_at: '2025-02-20T00:00:00Z', vehicles: [] },
-  { id: '3', name: 'James Thompson',  phone: '(954) 555-3003', created_at: '2025-03-10T00:00:00Z', vehicles: [] },
-];
+const vehicleSchema = z.object({
+  plate: z.string().min(2),
+  model: z.string().min(2),
+  description: z.string().optional(),
+});
+type VehicleFormValues = z.infer<typeof vehicleSchema>;
 
 export default function Customers() {
   const { t } = useTranslation();
-  const [customers, setCustomers] = useState<Customer[]>(INITIAL_CUSTOMERS);
-  const [showModal, setShowModal] = useState(false);
-  const [editing, setEditing] = useState<Customer | null>(null);
-  const [deleteId, setDeleteId] = useState<string | null>(null);
+  const qc = useQueryClient();
+  const [showCustomerModal, setShowCustomerModal] = useState(false);
+  const [showVehiclesModal, setShowVehiclesModal] = useState(false);
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deleteConfirm, setDeleteConfirm] = useState<Customer | null>(null);
+  const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
+  const [vehicleLoading, setVehicleLoading] = useState(false);
+  const [vehicles, setVehicles] = useState<Vehicle[]>([]);
+  const [editingVehicle, setEditingVehicle] = useState<Vehicle | null>(null);
+  const [deleteVehicleConfirm, setDeleteVehicleConfirm] = useState<Vehicle | null>(null);
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<FormValues>({
-    resolver: zodResolver(schema),
+  const { register: registerCustomer, handleSubmit: handleCustomerSubmit, reset: resetCustomer, formState: { errors: customerErrors } } = useForm<CustomerFormValues>({
+    resolver: zodResolver(customerSchema),
   });
 
-  const openCreate = () => { setEditing(null); reset({ name: '', phone: '' }); setShowModal(true); };
-  const openEdit = (c: Customer) => { setEditing(c); reset({ name: c.name, phone: c.phone }); setShowModal(true); };
+  const { register: registerVehicle, handleSubmit: handleVehicleSubmit, reset: resetVehicle, formState: { errors: vehicleErrors } } = useForm<VehicleFormValues>({
+    resolver: zodResolver(vehicleSchema),
+  });
 
-  const onSubmit = (values: FormValues) => {
-    if (editing) {
-      setCustomers((prev) => prev.map((c) => c.id === editing.id ? { ...c, ...values } : c));
-    } else {
-      const newC: Customer = { id: Date.now().toString(), ...values, created_at: new Date().toISOString(), vehicles: [] };
-      setCustomers((prev) => [...prev, newC]);
+  // Fetch customers
+  const { data: customers = [], isLoading } = useQuery({
+    queryKey: ['customers'],
+    queryFn: () => customersService.findAll(),
+  });
+
+  // Create/Update customer mutation
+  const createCustomerMutation = useMutation({
+    mutationFn: (values: CustomerFormValues) => 
+      editingCustomer 
+        ? customersService.update(editingCustomer.id, values)
+        : customersService.create(values),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      setShowCustomerModal(false);
+      resetCustomer();
+      setEditingCustomer(null);
+    },
+  });
+
+  // Delete customer mutation
+  const deleteCustomerMutation = useMutation({
+    mutationFn: (id: string) => customersService.remove(id),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['customers'] });
+      setDeleteConfirm(null);
+    },
+  });
+
+  // Create/Update vehicle mutation
+  const createVehicleMutation = useMutation({
+    mutationFn: (values: VehicleFormValues) => {
+      if (!selectedCustomer) throw new Error('No customer selected');
+      return editingVehicle
+        ? vehiclesService.update(editingVehicle.id, values)
+        : vehiclesService.create({ ...values, customer_id: selectedCustomer.id });
+    },
+    onSuccess: () => {
+      loadVehicles();
+      resetVehicle();
+      setEditingVehicle(null);
+    },
+  });
+
+  // Delete vehicle mutation
+  const deleteVehicleMutation = useMutation({
+    mutationFn: (id: string) => vehiclesService.remove(id),
+    onSuccess: () => {
+      loadVehicles();
+      setDeleteVehicleConfirm(null);
+    },
+  });
+
+  const loadVehicles = async () => {
+    if (!selectedCustomer) return;
+    setVehicleLoading(true);
+    try {
+      const data = await vehiclesService.findByCustomer(selectedCustomer.id);
+      setVehicles(data);
+    } finally {
+      setVehicleLoading(false);
     }
-    setShowModal(false);
   };
 
-  const confirmDelete = () => {
-    if (deleteId) setCustomers((prev) => prev.filter((c) => c.id !== deleteId));
-    setDeleteId(null);
+  const openCreateCustomer = () => {
+    setEditingCustomer(null);
+    resetCustomer({ name: '', phone: '' });
+    setShowCustomerModal(true);
   };
+
+  const openEditCustomer = (customer: Customer) => {
+    setEditingCustomer(customer);
+    resetCustomer({ name: customer.name, phone: customer.phone });
+    setShowCustomerModal(true);
+  };
+
+  const openVehiclesModal = async (customer: Customer) => {
+    setSelectedCustomer(customer);
+    setEditingVehicle(null);
+    resetVehicle({ plate: '', model: '', description: '' });
+    setShowVehiclesModal(true);
+    await loadVehicles();
+  };
+
+  const openEditVehicle = (vehicle: Vehicle) => {
+    setEditingVehicle(vehicle);
+    resetVehicle({ plate: vehicle.plate, model: vehicle.model, description: vehicle.description });
+  };
+
+  const onCustomerSubmit = (values: CustomerFormValues) => {
+    createCustomerMutation.mutate(values);
+  };
+
+  const onVehicleSubmit = (values: VehicleFormValues) => {
+    createVehicleMutation.mutate(values);
+  };
+
+  const handleDeleteCustomer = (customer: Customer) => {
+    setDeleteConfirm(customer);
+  };
+
+  const confirmDeleteCustomer = () => {
+    if (deleteConfirm) {
+      deleteCustomerMutation.mutate(deleteConfirm.id);
+    }
+  };
+
+  const handleDeleteVehicle = (vehicle: Vehicle) => {
+    setDeleteVehicleConfirm(vehicle);
+  };
+
+  const confirmDeleteVehicle = () => {
+    if (deleteVehicleConfirm) {
+      deleteVehicleMutation.mutate(deleteVehicleConfirm.id);
+    }
+  };
+
+  const columns: TableColumn<Customer>[] = [
+    {
+      key: 'name',
+      label: t('customers.name'),
+      width: '30%',
+    },
+    {
+      key: 'phone',
+      label: t('customers.phone'),
+      width: '25%',
+    },
+    {
+      key: 'created_at',
+      label: t('customers.createdAt'),
+      width: '20%',
+      render: (value: string) => new Date(value).toLocaleDateString(),
+    },
+    {
+      key: 'id',
+      label: t('customers.vehicles'),
+      width: '25%',
+      render: (_value: string, row: Customer) => (
+        <button
+          onClick={() => openVehiclesModal(row)}
+          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-105 cursor-pointer"
+          style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}
+        >
+          <Eye size={14} />
+          View
+        </button>
+      ),
+    },
+  ];
+
+  const actions: TableAction<Customer>[] = [
+    {
+      label: 'Edit',
+      icon: <Edit2 size={16} />,
+      onClick: openEditCustomer,
+      variant: 'secondary',
+    },
+    {
+      label: 'Delete',
+      icon: <Trash2 size={16} />,
+      onClick: handleDeleteCustomer,
+      variant: 'danger',
+    },
+  ];
 
   return (
     <Layout>
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold" style={{ color: '#0f1f3d' }}>{t('customers.title')}</h1>
+        <h1 className="text-2xl font-bold" style={{ color: '#0f1f3d' }}>
+          {t('customers.title')}
+        </h1>
         <button
-          onClick={openCreate}
-          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90"
+          onClick={openCreateCustomer}
+          className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer inline-flex items-center gap-2"
           style={{ backgroundColor: '#f97316' }}
         >
-          + {t('customers.new')}
+          <Plus size={16} />
+          {t('customers.new')}
         </button>
       </div>
 
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
-        <table className="w-full text-sm">
-          <thead>
-            <tr style={{ backgroundColor: '#0f1f3d' }}>
-              <th className="text-left px-5 py-3.5 font-medium text-white/80">{t('customers.name')}</th>
-              <th className="text-left px-5 py-3.5 font-medium text-white/80">{t('customers.phone')}</th>
-              <th className="text-left px-5 py-3.5 font-medium text-white/80">{t('customers.createdAt')}</th>
-              <th className="text-left px-5 py-3.5 font-medium text-white/80">{t('customers.vehicles')}</th>
-              <th className="px-5 py-3.5" />
-            </tr>
-          </thead>
-          <tbody>
-            {customers.map((c, i) => (
-              <tr key={c.id} className="border-t border-gray-100 hover:bg-orange-50/40 transition-colors"
-                style={{ backgroundColor: i % 2 === 0 ? '#ffffff' : '#fafafa' }}>
-                <td className="px-5 py-3.5 font-medium text-gray-800">{c.name}</td>
-                <td className="px-5 py-3.5 text-gray-500">{c.phone}</td>
-                <td className="px-5 py-3.5 text-gray-400">{new Date(c.created_at).toLocaleDateString()}</td>
-                <td className="px-5 py-3.5">
-                  <Link
-                    to={`/customers/${c.id}/vehicles`}
-                    className="text-xs font-semibold px-2.5 py-1 rounded-full transition-colors"
-                    style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}
-                  >
-                    {(c.vehicles?.length ?? 0)} {t('customers.vehicles')}
-                  </Link>
-                </td>
-                <td className="px-5 py-3.5 text-right">
-                  <button onClick={() => openEdit(c)} className="text-xs text-gray-500 hover:text-gray-800 mr-3">
-                    {t('common.edit')}
-                  </button>
-                  <button onClick={() => setDeleteId(c.id)} className="text-xs text-red-500 hover:text-red-700">
-                    {t('common.delete')}
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+      <Table<Customer>
+        columns={columns}
+        data={customers}
+        actions={actions}
+        isLoading={isLoading}
+        emptyMessage={t('customers.empty') || 'No customers found'}
+        rowKey="id"
+      />
 
-      {/* Create / Edit modal */}
-      {showModal && (
-        <Modal title={editing ? t('customers.edit') : t('customers.new')} onClose={() => setShowModal(false)}>
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Field label={t('customers.name')} error={errors.name?.message}>
-              <input {...register('name')} className={inputCls(!!errors.name)} placeholder="John Doe" />
+      {/* Create / Edit Customer Modal */}
+      {showCustomerModal && (
+        <Modal 
+          title={editingCustomer ? t('customers.edit') : t('customers.new')} 
+          onClose={() => setShowCustomerModal(false)}
+        >
+          <form onSubmit={handleCustomerSubmit(onCustomerSubmit)} className="space-y-4">
+            <Field label={t('customers.name')} error={customerErrors.name?.message}>
+              <input {...registerCustomer('name')} className={inputCls(!!customerErrors.name)} placeholder="John Doe" />
             </Field>
-            <Field label={t('customers.phone')} error={errors.phone?.message}>
-              <input {...register('phone')} className={inputCls(!!errors.phone)} placeholder="(305) 555-1234" />
+            <Field label={t('customers.phone')} error={customerErrors.phone?.message}>
+              <input {...registerCustomer('phone')} className={inputCls(!!customerErrors.phone)} placeholder="(305) 555-1234" />
             </Field>
             <div className="flex justify-end gap-3 pt-2">
-              <button type="button" onClick={() => setShowModal(false)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setShowCustomerModal(false)}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+              >
                 {t('common.cancel')}
               </button>
-              <button type="submit" className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90"
-                style={{ backgroundColor: '#f97316' }}>
-                {t('common.save')}
+              <button
+                type="submit"
+                disabled={createCustomerMutation.isPending}
+                className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                {createCustomerMutation.isPending ? '...' : t('common.save')}
               </button>
             </div>
           </form>
         </Modal>
       )}
 
-      {/* Delete confirm */}
-      {deleteId && (
-        <Modal title={t('common.confirmDelete')} onClose={() => setDeleteId(null)}>
-          <p className="text-gray-600 text-sm mb-5">{t('common.deleteWarning')}</p>
+      {/* Delete Customer Confirm */}
+      {deleteConfirm && (
+        <Modal title={t('common.confirmDelete')} onClose={() => setDeleteConfirm(null)}>
+          <p className="text-gray-600 text-sm mb-5">
+            {t('common.deleteWarning')} <strong>{deleteConfirm.name}</strong>?
+          </p>
           <div className="flex justify-end gap-3">
-            <button onClick={() => setDeleteId(null)} className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50">
+            <button
+              onClick={() => setDeleteConfirm(null)}
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+            >
               {t('common.cancel')}
             </button>
-            <button onClick={confirmDelete} className="px-4 py-2 text-sm rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600">
-              {t('common.delete')}
+            <button
+              onClick={confirmDeleteCustomer}
+              disabled={deleteCustomerMutation.isPending}
+              className="px-4 py-2 text-sm rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600 disabled:opacity-60 cursor-pointer transition-colors"
+            >
+              {deleteCustomerMutation.isPending ? '...' : t('common.delete')}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Vehicles Modal */}
+      {showVehiclesModal && selectedCustomer && (
+        <Modal 
+          title={`${selectedCustomer.name} - ${t('customers.vehicles')}`}
+          onClose={() => setShowVehiclesModal(false)}
+          size="lg"
+        >
+          <div className="space-y-4">
+            {/* Add Vehicle Form */}
+            <div className="border-b pb-4">
+              <h3 className="font-semibold text-sm mb-3" style={{ color: '#0f1f3d' }}>
+                {editingVehicle ? 'Edit Vehicle' : 'Add New Vehicle'}
+              </h3>
+              <form onSubmit={handleVehicleSubmit(onVehicleSubmit)} className="space-y-3">
+                <Field label="License Plate" error={vehicleErrors.plate?.message}>
+                  <input {...registerVehicle('plate')} className={inputCls(!!vehicleErrors.plate)} placeholder="ABC-1234" />
+                </Field>
+                <Field label="Model" error={vehicleErrors.model?.message}>
+                  <input {...registerVehicle('model')} className={inputCls(!!vehicleErrors.model)} placeholder="Toyota Camry 2020" />
+                </Field>
+                <Field label="Description (optional)" error={vehicleErrors.description?.message}>
+                  <input {...registerVehicle('description')} className={inputCls(!!vehicleErrors.description)} placeholder="Regular maintenance" />
+                </Field>
+                <div className="flex justify-end gap-2 pt-2">
+                  {editingVehicle && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setEditingVehicle(null);
+                        resetVehicle({ plate: '', model: '', description: '' });
+                      }}
+                      className="px-3 py-1.5 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  )}
+                  <button
+                    type="submit"
+                    disabled={createVehicleMutation.isPending}
+                    className="px-3 py-1.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity inline-flex items-center gap-2"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    <Plus size={14} />
+                    {createVehicleMutation.isPending ? '...' : editingVehicle ? 'Update' : 'Add'}
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            {/* Vehicles List */}
+            <div>
+              <h3 className="font-semibold text-sm mb-3" style={{ color: '#0f1f3d' }}>
+                Vehicles ({vehicles.length})
+              </h3>
+              {vehicleLoading ? (
+                <p className="text-sm text-gray-500">Loading...</p>
+              ) : vehicles.length === 0 ? (
+                <p className="text-sm text-gray-500">No vehicles registered yet</p>
+              ) : (
+                <div className="space-y-2">
+                  {vehicles.map((vehicle) => (
+                    <div key={vehicle.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50 transition-colors">
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">{vehicle.plate}</p>
+                        <p className="text-xs text-gray-600">{vehicle.model}</p>
+                        {vehicle.description && <p className="text-xs text-gray-500">{vehicle.description}</p>}
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => openEditVehicle(vehicle)}
+                          className="p-1.5 rounded-lg hover:bg-blue-100 transition-colors cursor-pointer"
+                        >
+                          <Edit2 size={14} className="text-blue-600" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteVehicle(vehicle)}
+                          className="p-1.5 rounded-lg hover:bg-red-100 transition-colors cursor-pointer"
+                        >
+                          <Trash2 size={14} className="text-red-600" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Modal Footer */}
+          <div className="flex justify-end gap-3 pt-4 border-t mt-4">
+            <button
+              onClick={() => setShowVehiclesModal(false)}
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Delete Vehicle Confirm */}
+      {deleteVehicleConfirm && (
+        <Modal title={t('common.confirmDelete')} onClose={() => setDeleteVehicleConfirm(null)}>
+          <p className="text-gray-600 text-sm mb-5">
+            Delete vehicle <strong>{deleteVehicleConfirm.plate}</strong>? {t('common.deleteWarning')}
+          </p>
+          <div className="flex justify-end gap-3">
+            <button
+              onClick={() => setDeleteVehicleConfirm(null)}
+              className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+            >
+              {t('common.cancel')}
+            </button>
+            <button
+              onClick={confirmDeleteVehicle}
+              disabled={deleteVehicleMutation.isPending}
+              className="px-4 py-2 text-sm rounded-lg text-white font-semibold bg-red-500 hover:bg-red-600 disabled:opacity-60 cursor-pointer transition-colors"
+            >
+              {deleteVehicleMutation.isPending ? '...' : t('common.delete')}
             </button>
           </div>
         </Modal>
       )}
     </Layout>
-  );
-}
-
-/* ── shared helpers ── */
-function inputCls(hasError: boolean) {
-  return `w-full border rounded-lg px-3.5 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-orange-400 ${hasError ? 'border-red-400' : 'border-gray-300'}`;
-}
-
-function Field({ label, error, children }: { label: string; error?: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-medium mb-1.5 text-gray-700">{label}</label>
-      {children}
-      {error && <p className="text-red-500 text-xs mt-1">{error}</p>}
-    </div>
-  );
-}
-
-function Modal({ title, onClose, children }: { title: string; onClose: () => void; children: React.ReactNode }) {
-  return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm">
-      <div className="bg-white rounded-2xl shadow-xl w-full max-w-md mx-4 p-6">
-        <div className="flex items-center justify-between mb-5">
-          <h2 className="text-base font-bold" style={{ color: '#0f1f3d' }}>{title}</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl leading-none">&times;</button>
-        </div>
-        {children}
-      </div>
-    </div>
   );
 }

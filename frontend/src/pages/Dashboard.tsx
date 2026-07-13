@@ -1,6 +1,8 @@
+import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import Layout from '../components/Layout';
+import { customersService } from '../services/customers.service';
 
 const roleBadgeColor: Record<string, string> = {
   admin: '#f97316',
@@ -11,6 +13,12 @@ const roleBadgeColor: Record<string, string> = {
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
+
+  // Fetch customers
+  const { data: customers = [], isLoading: loadingCustomers } = useQuery({
+    queryKey: ['customers-list'],
+    queryFn: () => customersService.findAll(),
+  });
 
   return (
     <Layout>
@@ -45,18 +53,24 @@ export default function Dashboard() {
         </span>
       </div>
 
-      {/* Placeholder stats */}
+      {/* Stats from API */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        {[
-          { label: 'Work Orders', value: '—' },
-          { label: 'Customers', value: '—' },
-          { label: 'Pending Payments', value: '—' },
-        ].map((stat) => (
-          <div key={stat.label} className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
-            <p className="text-sm text-gray-500 mb-1">{stat.label}</p>
-            <p className="text-3xl font-bold" style={{ color: '#0f1f3d' }}>{stat.value}</p>
-          </div>
-        ))}
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Customers</p>
+          <p className="text-3xl font-bold" style={{ color: '#0f1f3d' }}>
+            {loadingCustomers ? '...' : customers.length}
+          </p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Active Users</p>
+          <p className="text-3xl font-bold" style={{ color: '#0f1f3d' }}>1</p>
+        </div>
+
+        <div className="bg-white rounded-xl p-5 shadow-sm border border-gray-100">
+          <p className="text-sm text-gray-500 mb-1">Status</p>
+          <p className="text-3xl font-bold" style={{ color: '#10b981' }}>✓</p>
+        </div>
       </div>
     </Layout>
   );
