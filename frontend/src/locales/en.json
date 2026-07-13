@@ -27,6 +27,7 @@
     "dashboard": "Dashboard",
     "users": "Users",
     "customers": "Customers",
+    "workOrders": "Work Orders",
     "logout": "Logout"
   },
   "roles": {
@@ -68,6 +69,11 @@
     "editVehicle": "Edit Vehicle",
     "addNewVehicle": "Add New Vehicle",
     "noVehicles": "No vehicles registered yet"
+  },
+  "workOrders": {
+    "title": "Work Orders",
+    "new": "New Order",
+    "description": "Description"
   },
   "common": {
     "language": "Language",

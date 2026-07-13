@@ -33,6 +33,16 @@ export class WorkOrdersService {
     return this.workOrdersRepo.save(workOrder);
   }
 
+  async findAll(): Promise<WorkOrder[]> {
+    return this.workOrdersRepo.find({
+      relations: {
+        items: true,
+        vehicle: true,
+      },
+      order: { created_at: 'DESC' },
+    });
+  }
+
   async findByVehicle(vehicleId: string): Promise<WorkOrder[]> {
     return this.workOrdersRepo.find({
       where: { vehicle_id: vehicleId },
@@ -61,7 +71,7 @@ export class WorkOrdersService {
   }
 
   async addItem(workOrderId: string, dto: AddItemDto): Promise<WorkOrder> {
-    const order = await this.findOne(workOrderId);
+    await this.findOne(workOrderId);
 
     const item = this.itemsRepo.create({
       work_order_id: workOrderId,
@@ -78,7 +88,7 @@ export class WorkOrdersService {
   }
 
   async removeItem(workOrderId: string, itemId: string): Promise<WorkOrder> {
-    const order = await this.findOne(workOrderId);
+    await this.findOne(workOrderId);
 
     const item = await this.itemsRepo.findOne({ where: { id: itemId } });
     if (!item) {

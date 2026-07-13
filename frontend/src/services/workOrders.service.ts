@@ -21,7 +21,7 @@ const api = axios.create({
 
 // Add JWT token to requests
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('token');
+  const token = localStorage.getItem('access_token');
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
@@ -29,6 +29,10 @@ api.interceptors.request.use((config) => {
 });
 
 export const workOrdersService = {
+  /** GET /work-orders */
+  findAll: (): Promise<WorkOrder[]> =>
+    api.get('/work-orders').then((res) => res.data),
+
   /** GET /work-orders?vehicleId=:id */
   getByVehicle: (vehicleId: string): Promise<WorkOrder[]> =>
     api.get('/work-orders/vehicle/' + vehicleId).then((res) => res.data),

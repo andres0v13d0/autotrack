@@ -10,6 +10,15 @@ export interface WorkOrderItem {
   qty: number;
 }
 
+export interface Vehicle {
+  id: string;
+  customer_id: string;
+  plate: string;
+  model: string;
+  description?: string;
+  created_at: string;
+}
+
 export interface WorkOrder {
   id: string;
   vehicle_id: string;
@@ -20,6 +29,7 @@ export interface WorkOrder {
   tax: number;
   total: number;
   created_at: string;
+  vehicle?: Vehicle;
   // Derived fields (calculated on frontend from payments)
   amountPaid?: number;
   balanceDue?: number;

@@ -26,6 +26,12 @@ export class WorkOrdersController {
     return this.workOrdersService.create(dto, req.user.id);
   }
 
+  @Get()
+  @Roles('admin', 'front_desk', 'technician')
+  findAll() {
+    return this.workOrdersService.findAll();
+  }
+
   @Get(':id')
   @Roles('admin', 'front_desk', 'technician')
   findOne(@Param('id') id: string) {

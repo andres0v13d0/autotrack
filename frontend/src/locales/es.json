@@ -25,6 +25,7 @@
     "dashboard": "Panel",
     "users": "Usuarios",
     "customers": "Clientes",
+    "workOrders": "Órdenes de Trabajo",
     "logout": "Cerrar sesión"
   },
   "roles": {
@@ -66,6 +67,11 @@
     "editVehicle": "Editar Vehículo",
     "addNewVehicle": "Agregar Nuevo Vehículo",
     "noVehicles": "Sin vehículos registrados"
+  },
+  "workOrders": {
+    "title": "Órdenes de Trabajo",
+    "new": "Nueva Orden",
+    "description": "Descripción"
   },
   "common": {
     "language": "Idioma",
