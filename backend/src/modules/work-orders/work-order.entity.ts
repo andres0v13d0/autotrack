@@ -6,6 +6,7 @@ import {
   ManyToOne,
   OneToMany,
   JoinColumn,
+  Unique,
 } from 'typeorm';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { User } from '../users/user.entity';
@@ -13,6 +14,7 @@ import { WorkOrderItem } from './work-order-item.entity';
 import { Payment } from '../payments/payment.entity';
 
 @Entity('work_orders')
+@Unique(['order_number', 'created_by_id'])
 export class WorkOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -42,7 +44,7 @@ export class WorkOrder {
   @Column({ type: 'varchar', default: 'new' })
   delivery_status: 'new' | 'in_progress' | 'ready' | 'delivered';
 
-  @Column({ type: 'int', unique: true, nullable: true })
+  @Column({ type: 'int', nullable: true })
   order_number: number;
 
   @ManyToOne(() => User)

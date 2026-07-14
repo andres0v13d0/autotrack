@@ -135,12 +135,14 @@ export default function WorkOrders() {
 
   const createMutation = useMutation({
     mutationFn: async (values: CreateOrderValues) => {
-      return workOrdersService.create(values.vehicle_id, values.description_needed);
+      return workOrdersService.create(values.vehicle_id, values.description_needed, values.customer_id);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workOrders'] });
       setShowCreateModal(false);
       resetCreate();
+      setVehicles([]);
+      handleResetCustomer();
     },
   });
 
@@ -364,6 +366,8 @@ export default function WorkOrders() {
             }
             createMutation.mutate({ ...v, customer_id: selectedCustomer.id });
           })} className="space-y-4">
+            {/* Hidden input for customer_id */}
+            <input type="hidden" {...registerCreate('customer_id')} value={selectedCustomer?.id || ''} />
             {/* Customer Search */}
             <div>
               <div className="flex items-center justify-between mb-2">

@@ -20,14 +20,15 @@ export class WorkOrdersService {
   async create(dto: CreateWorkOrderDto, userId: string): Promise<WorkOrder> {
     const taxRate = this.configService.get<number>('TAX_RATE', 0.0875);
 
-    // Generate order_number: find the max and increment
-    const lastOrder = await this.workOrdersRepo
+    // Generate order_number: find the max order_number for this user and increment
+    const maxOrder = await this.workOrdersRepo
       .createQueryBuilder('wo')
-      .orderBy('wo.order_number', 'DESC')
-      .limit(1)
-      .getOne();
+      .select('MAX(wo.order_number)', 'max_order')
+      .where('wo.created_by_id = :userId', { userId })
+      .getRawOne();
     
-    const orderNumber = (lastOrder?.order_number || 1000) + 1;
+    const maxOrderNumber = maxOrder?.max_order ? parseInt(maxOrder.max_order) : 1000;
+    const orderNumber = maxOrderNumber + 1;
 
     const workOrder = this.workOrdersRepo.create({
       vehicle_id: dto.vehicle_id,

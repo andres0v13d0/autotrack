@@ -42,11 +42,12 @@ export const workOrdersService = {
     api.get(`/work-orders/${id}`).then((res) => res.data),
 
   /** POST /work-orders */
-  create: (vehicleId: string, descriptionNeeded: string): Promise<WorkOrder> =>
+  create: (vehicleId: string, descriptionNeeded: string, customerId?: string): Promise<WorkOrder> =>
     api
       .post('/work-orders', {
         vehicle_id: vehicleId,
         description_needed: descriptionNeeded,
+        customer_id: customerId,
       })
       .then((res) => res.data),
 
