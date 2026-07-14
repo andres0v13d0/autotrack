@@ -1,6 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
@@ -45,6 +45,8 @@ export default function WorkOrders() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'pending' | 'partial' | 'paid' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
+  const [showItemForm, setShowItemForm] = useState(false);
+  const itemNameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
     queryKey: ['workOrders'],
@@ -337,14 +339,17 @@ export default function WorkOrders() {
       {/* Work Order Detail Modal */}
       {showDetailModal && selectedOrder && (
         <Modal
-          title={`Order #${selectedOrder.order_number || 'N/A'}\n${selectedOrder.description_needed}`}
+          title={`Order #${selectedOrder.order_number || 'N/A'}`}
           onClose={() => {
             setShowDetailModal(false);
             setSelectedWorkOrderId(null);
+            setShowItemForm(false);
+            resetItem();
           }}
           size="xl"
         >
           <div className="space-y-6 max-h-[85vh] overflow-y-auto">
+
             {/* Vehicle Details & Delivery Status */}
             <div className="grid grid-cols-3 gap-6 pb-6 border-b-2 border-gray-200">
               <div className="col-span-2">
@@ -375,91 +380,112 @@ export default function WorkOrders() {
                     onChange={(e) => setModalDeliveryStatus(e.target.value as any)}
                     className="text-xs font-semibold px-3 py-2 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-colors"
                   >
-                    <option value="new">⚪ New</option>
-                    <option value="in_progress">🟠 In Progress</option>
-                    <option value="ready">🔵 Ready</option>
-                    <option value="delivered">🟢 Delivered</option>
+                    <option value="new"><span className="inline-block w-2 h-2 rounded-full bg-white border border-slate-900 mr-2"></span>New</option>
+                    <option value="in_progress"><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>In Progress</option>
+                    <option value="ready"><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>Ready</option>
+                    <option value="delivered"><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>Delivered</option>
                   </select>
                 </div>
               </div>
             </div>
 
-            {/* Items Section */}
+            {/* Items Section - Invoice Style */}
             <div>
-              <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Work Items</h2>
-              
-              {selectedOrder.items.length === 0 ? (
-                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
-                  <p className="text-gray-500 text-sm">{t('workOrders.noItems')}</p>
-                </div>
-              ) : (
-                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-4">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{ backgroundColor: '#f3f4f6' }}>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.type')}</th>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.itemName')}</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
-                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">Remove</th>
+              <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Items</h2>
+              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ backgroundColor: '#f3f4f6' }}>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.type')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.itemName')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
+                      <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
+                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200">
+                    {/* Existing Items */}
+                    {selectedOrder.items.map((item, idx) => (
+                      <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3">
+                          <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.type === 'part' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                            {t(`workOrders.itemType.${item.type}`)}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-xs font-medium text-gray-900">{item.name}</td>
+                        <td className="px-4 py-3 text-right text-xs font-medium text-gray-900">${item.price.toFixed(2)}</td>
+                        <td className="px-4 py-3 text-center text-xs font-medium text-gray-900">{item.qty}</td>
+                        <td className="px-4 py-3 text-right text-xs font-bold text-gray-900">${(item.price * item.qty).toFixed(2)}</td>
+                        <td className="px-4 py-3 text-right">
+                          <button
+                            onClick={() => removeItemMutation.mutate(item.id)}
+                            className="text-red-500 hover:text-red-700 transition-colors cursor-pointer font-medium"
+                            disabled={removeItemMutation.isPending}
+                          >
+                            <X size={16} />
+                          </button>
+                        </td>
                       </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-200">
-                      {selectedOrder.items.map((item, idx) => (
-                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.type === 'part' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
-                              {t(`workOrders.itemType.${item.type}`)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-xs font-medium text-gray-900">{item.name}</td>
-                          <td className="px-4 py-3 text-right text-xs font-medium text-gray-900">${item.price.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-center text-xs font-medium text-gray-900">{item.qty}</td>
-                          <td className="px-4 py-3 text-right text-xs font-bold text-gray-900">${(item.price * item.qty).toFixed(2)}</td>
-                          <td className="px-4 py-3 text-right">
-                            <button
-                              onClick={() => removeItemMutation.mutate(item.id)}
-                              className="text-red-500 hover:text-red-700 transition-colors cursor-pointer font-medium"
-                              disabled={removeItemMutation.isPending}
-                            >
-                              <X size={16} />
-                            </button>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+              
+              {/* Add Item Link Below Table */}
+              <div className="mt-3 text-right">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    setShowItemForm(true);
+                    setTimeout(() => itemNameInputRef.current?.focus(), 0);
+                  }}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                >
+                  + Add Item
+                </a>
+              </div>
 
-              {/* Add Item Form */}
-              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
-                <h3 className="font-bold text-sm mb-4" style={{ color: '#0f1f3d' }}>{t('workOrders.addItem')}</h3>
-                <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))} className="grid grid-cols-5 gap-3">
-                  <Field label={t('workOrders.type')} error={itemErrors.type?.message}>
-                    <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs`}>
-                      <option value="part">{t('workOrders.itemType.part')}</option>
-                      <option value="labor">{t('workOrders.itemType.labor')}</option>
-                    </select>
-                  </Field>
-                  <Field label={t('workOrders.itemName')} error={itemErrors.name?.message}>
-                    <input {...registerItem('name')} className={`${inputCls(!!itemErrors.name)} text-xs`} placeholder="Item" />
-                  </Field>
-                  <Field label={t('workOrders.price')} error={itemErrors.price?.message}>
-                    <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs`} placeholder="0.00" />
-                  </Field>
-                  <Field label={t('workOrders.qty')} error={itemErrors.qty?.message}>
-                    <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs`} placeholder="1" />
-                  </Field>
-                  <div className="flex items-end">
-                    <button type="submit" disabled={addItemMutation.isPending} className="w-full px-3 py-2 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer" style={{ backgroundColor: '#f97316' }}>
-                      {addItemMutation.isPending ? '...' : '+'}
-                    </button>
+              {/* Add Item Form Below */}
+              {showItemForm && (
+                <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))} className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4">
+                  <div className="grid grid-cols-6 gap-3">
+                    <div>
+                      <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs w-full`}>
+                        <option value="part">{t('workOrders.itemType.part')}</option>
+                        <option value="labor">{t('workOrders.itemType.labor')}</option>
+                      </select>
+                    </div>
+                    <div className="col-span-2">
+                      <input 
+                        ref={itemNameInputRef}
+                        {...registerItem('name')} 
+                        className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
+                        placeholder="Item name" 
+                      />
+                    </div>
+                    <div>
+                      <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs w-full text-right`} placeholder="Price" />
+                    </div>
+                    <div>
+                      <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs w-full text-center`} placeholder="Qty" />
+                    </div>
+                    <div className="flex justify-end gap-2">
+                      <button 
+                        type="button"
+                        onClick={() => setShowItemForm(false)}
+                        className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-bold hover:bg-gray-100 cursor-pointer transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button type="submit" disabled={addItemMutation.isPending} className="px-4 py-2 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer" style={{ backgroundColor: '#f97316' }}>
+                        {addItemMutation.isPending ? '...' : 'Add'}
+                      </button>
+                    </div>
                   </div>
                 </form>
-              </div>
-              <a href="#" onClick={(e) => { e.preventDefault(); }} className="text-blue-600 hover:text-blue-700 text-xs font-semibold cursor-pointer">+ Add Item</a>
+              )}
             </div>
 
             {/* Totals Section */}
