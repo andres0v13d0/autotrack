@@ -13,6 +13,7 @@ import { workOrdersService } from '../services/workOrders.service';
 import { vehiclesService } from '../services/vehicles.service';
 import { customersService } from '../services/customers.service';
 import { paymentsService } from '../services/payments.service';
+import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
 import type { Vehicle } from '../types';
 import { Plus, Circle, Clock, CheckCircle2, Check } from 'lucide-react';
@@ -45,6 +46,7 @@ export default function WorkOrders() {
   const [searchQuery, setSearchQuery] = useState('');
   const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
   const [editingItems, setEditingItems] = useState<Record<string, { price: string; qty: string }>>({});
+  const [amountToPay, setAmountToPay] = useState<string>('');
   const itemNameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
@@ -77,6 +79,38 @@ export default function WorkOrders() {
   const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors }, watch: watchItem } = useForm<ItemForm>({
     defaultValues: { qty: '1' },
   });
+
+  const handleSaveAndDownloadPdf = async () => {
+    if (!selectedWorkOrderId || !amountToPay) return;
+
+    try {
+      // Guardar el pago
+      const paymentAmount = parseFloat(amountToPay);
+      if (paymentAmount > 0) {
+        await paymentsService.create(
+          selectedWorkOrderId,
+          paymentAmount,
+          'cash',
+          new Date().toISOString().split('T')[0]
+        );
+      }
+
+      // Generar y descargar PDF
+      await pdfService.downloadWorkOrderPdf(selectedWorkOrderId);
+
+      // Cerrar modal y limpiar
+      setShowDetailModal(false);
+      setSelectedWorkOrderId(null);
+      resetItem();
+      setAmountToPay('');
+      
+      // Refrescar datos
+      qc.invalidateQueries({ queryKey: ['workOrders'] });
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+    } catch (error) {
+      console.error('Error saving payment or generating PDF:', error);
+    }
+  };
 
   const createMutation = useMutation({
     mutationFn: async (values: CreateOrderValues) => {
@@ -342,47 +376,68 @@ export default function WorkOrders() {
             setShowDetailModal(false);
             setSelectedWorkOrderId(null);
             resetItem();
+            setAmountToPay('');
           }}
           size="xl"
+          footer={
+            <div className="flex gap-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDetailModal(false);
+                  setSelectedWorkOrderId(null);
+                  resetItem();
+                  setAmountToPay('');
+                }}
+                className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveAndDownloadPdf}
+                className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 cursor-pointer transition-opacity"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                Save & Download PDF
+              </button>
+            </div>
+          }
         >
           <div className="space-y-6 max-h-[85vh] overflow-y-auto">
 
             {/* Vehicle Details & Delivery Status */}
-            <div className="grid grid-cols-3 gap-6 pb-6 border-b-2 border-gray-200">
-              <div className="col-span-2">
-                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-3">Vehicle Details</p>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-8">
-                    <div>
-                      <p className="text-xs text-gray-600 font-medium mb-1">Plate</p>
-                      <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.plate || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-medium mb-1">Model</p>
-                      <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.model || 'N/A'}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-600 font-medium mb-1">Customer</p>
-                      <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.customer?.name || 'N/A'}</p>
-                    </div>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pb-6 border-b-2 border-gray-200">
+              <div className="md:col-span-2 space-y-4">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Vehicle Details</p>
+                <div className="grid grid-cols-2 md:flex md:items-center md:gap-8 gap-4">
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium mb-1">Plate</p>
+                    <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.plate || 'N/A'}</p>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-600 font-medium mb-1">Model</p>
+                    <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.model || 'N/A'}</p>
+                  </div>
+                  <div className="col-span-2 md:col-span-1">
+                    <p className="text-xs text-gray-600 font-medium mb-1">Customer</p>
+                    <p className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.customer?.name || 'N/A'}</p>
                   </div>
                 </div>
               </div>
               
-              <div className="flex flex-col items-end space-y-3">
-                <div>
-                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-2">Delivery Status</p>
-                  <select 
-                    value={modalDeliveryStatus} 
-                    onChange={(e) => setModalDeliveryStatus(e.target.value as any)}
-                    className="text-xs font-semibold px-3 py-2 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-colors"
-                  >
-                    <option value="new"><span className="inline-block w-2 h-2 rounded-full bg-white border border-slate-900 mr-2"></span>New</option>
-                    <option value="in_progress"><span className="inline-block w-2 h-2 rounded-full bg-orange-500 mr-2"></span>In Progress</option>
-                    <option value="ready"><span className="inline-block w-2 h-2 rounded-full bg-blue-500 mr-2"></span>Ready</option>
-                    <option value="delivered"><span className="inline-block w-2 h-2 rounded-full bg-emerald-500 mr-2"></span>Delivered</option>
-                  </select>
-                </div>
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Delivery Status</p>
+                <select 
+                  value={modalDeliveryStatus} 
+                  onChange={(e) => setModalDeliveryStatus(e.target.value as any)}
+                  className="text-xs font-semibold px-3 py-2 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-colors w-full"
+                >
+                  <option value="new">New</option>
+                  <option value="in_progress">In Progress</option>
+                  <option value="ready">Ready</option>
+                  <option value="delivered">Delivered</option>
+                </select>
               </div>
             </div>
 
@@ -397,9 +452,7 @@ export default function WorkOrders() {
                       <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
                       <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
-                      {selectedOrder.items.length > 0 && (
-                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">Actions</th>
-                      )}
+                      {selectedOrder.items.length > 0 && <th className="px-4 py-3"></th>}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
@@ -549,13 +602,35 @@ export default function WorkOrders() {
                 </div>
                 {balance && (
                   <>
-                    <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center text-xs">
+                    <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center text-xs gap-2">
                       <span className="text-gray-600">Amount Paid</span>
-                      <span className="font-semibold text-green-600">${balance.amountPaid.toFixed(2)}</span>
+                      <div className="flex items-center gap-1">
+                        <span className="text-gray-500">$</span>
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder={(typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total) : selectedOrder.total).toFixed(2)}
+                          value={amountToPay}
+                          onChange={(e) => setAmountToPay(e.target.value)}
+                          className="w-20 px-2 py-1 border border-gray-300 rounded text-xs text-right font-semibold text-green-600"
+                        />
+                      </div>
                     </div>
                     <div className="flex justify-between items-center text-xs">
-                      <span className={`font-bold ${balance.balanceDue! > 0 ? 'text-red-600' : 'text-green-600'}`}>Balance Due</span>
-                      <span className={`text-sm font-bold ${balance.balanceDue! > 0 ? 'text-red-600' : 'text-green-600'}`}>${balance.balanceDue!.toFixed(2)}</span>
+                      {(() => {
+                        const totalAmount = typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total) : selectedOrder.total;
+                        const paidAmount = amountToPay ? parseFloat(amountToPay) : totalAmount;
+                        const balanceDue = Math.max(0, totalAmount - paidAmount);
+                        return (
+                          <>
+                            <span className={`font-bold ${balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>Balance Due</span>
+                            <span className={`text-sm font-bold ${balanceDue > 0 ? 'text-red-600' : 'text-green-600'}`}>
+                              ${balanceDue.toFixed(2)}
+                            </span>
+                          </>
+                        );
+                      })()}
                     </div>
                   </>
                 )}
