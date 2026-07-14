@@ -114,7 +114,8 @@ export class WorkOrdersService {
       qty: dto.qty,
     });
 
-    await this.itemsRepo.save(item);
+    const savedItem = await this.itemsRepo.save(item);
+    console.log('✅ Item saved:', savedItem);
 
     // Recalculate order totals
     return this.recalculateOrder(workOrderId);
@@ -135,12 +136,16 @@ export class WorkOrdersService {
   }
 
   private async recalculateOrder(workOrderId: string): Promise<WorkOrder> {
+    console.log('🔄 Recalculating order:', workOrderId);
+    
     const order = await this.workOrdersRepo.findOne({
       where: { id: workOrderId },
       relations: {
         items: true,
       },
     });
+
+    console.log('📦 Order items loaded:', order?.items?.length || 0, 'items');
 
     if (!order) {
       throw new NotFoundException(`Work order ${workOrderId} not found`);
@@ -169,6 +174,8 @@ export class WorkOrdersService {
         },
       },
     });
+
+    console.log('✅ Final order returned with', reloaded?.items?.length || 0, 'items');
     
     if (!reloaded) {
       throw new NotFoundException(`Work order ${workOrderId} not found after recalculation`);

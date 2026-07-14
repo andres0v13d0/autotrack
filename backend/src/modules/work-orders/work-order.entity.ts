@@ -17,7 +17,7 @@ export class WorkOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Vehicle, (vehicle) => vehicle.workOrders, { eager: true })
+  @ManyToOne(() => Vehicle, (vehicle) => vehicle.workOrders)
   @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
@@ -54,7 +54,7 @@ export class WorkOrder {
   @CreateDateColumn()
   created_at: Date;
 
-  @OneToMany(() => WorkOrderItem, (item) => item.work_order, { eager: true })
+  @OneToMany(() => WorkOrderItem, (item) => item.work_order)
   items: WorkOrderItem[];
 
   @OneToMany(() => Payment, (payment) => payment.work_order)
