@@ -16,7 +16,7 @@ import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
 import type { Vehicle } from '../types';
-import { Eye, Plus, X } from 'lucide-react';
+import { Eye, Plus, X, Circle, Clock, CheckCircle2, Check } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Field, { inputCls } from '../components/ui/Field';
 
