@@ -1,10 +1,11 @@
 import axios from 'axios';
+import { generateAndDownloadPdf } from '../components/WorkOrderPDF';
+import type { WorkOrder } from '../types/workOrder';
 
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
 });
 
-// Add JWT token to requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('access_token');
   if (token) {
@@ -14,20 +15,20 @@ api.interceptors.request.use((config) => {
 });
 
 export const pdfService = {
+  getPdfData: async (workOrderId: string): Promise<{ workOrder: WorkOrder; settings: any }> => {
+    try {
+      const response = await api.get(`/work-orders/${workOrderId}/pdf-data`);
+      return response.data;
+    } catch (error) {
+      console.error('Failed to fetch PDF data:', error);
+      throw error;
+    }
+  },
+
   downloadWorkOrderPdf: async (workOrderId: string) => {
     try {
-      const response = await api.get(`/work-orders/${workOrderId}/pdf`, {
-        responseType: 'blob',
-      });
-      
-      const url = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = url;
-      link.setAttribute('download', `order-${workOrderId.slice(0, 8)}.pdf`);
-      document.body.appendChild(link);
-      link.click();
-      link.parentNode?.removeChild(link);
-      window.URL.revokeObjectURL(url);
+      const { workOrder, settings } = await pdfService.getPdfData(workOrderId);
+      await generateAndDownloadPdf(workOrder, settings);
     } catch (error) {
       console.error('Failed to download PDF:', error);
       throw error;

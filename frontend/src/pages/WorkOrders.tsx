@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useState, useRef } from 'react';
@@ -81,21 +82,28 @@ export default function WorkOrders() {
   });
 
   const handleSaveAndDownloadPdf = async () => {
-    if (!selectedWorkOrderId || !amountToPay) return;
+    if (!selectedWorkOrderId) {
+      console.error('No work order selected');
+      return;
+    }
 
     try {
-      // Guardar el pago
-      const paymentAmount = parseFloat(amountToPay);
-      if (paymentAmount > 0) {
-        await paymentsService.create(
-          selectedWorkOrderId,
-          paymentAmount,
-          'cash',
-          new Date().toISOString().split('T')[0]
-        );
+      // Guardar el pago si hay monto
+      if (amountToPay) {
+        const paymentAmount = parseFloat(amountToPay);
+        if (paymentAmount > 0) {
+          console.log('Creating payment:', paymentAmount);
+          await paymentsService.create(
+            selectedWorkOrderId,
+            paymentAmount,
+            'cash',
+            new Date().toISOString().split('T')[0]
+          );
+        }
       }
 
       // Generar y descargar PDF
+      console.log('Downloading PDF for order:', selectedWorkOrderId);
       await pdfService.downloadWorkOrderPdf(selectedWorkOrderId);
 
       // Cerrar modal y limpiar
@@ -109,6 +117,7 @@ export default function WorkOrders() {
       qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
     } catch (error) {
       console.error('Error saving payment or generating PDF:', error);
+      alert('Error: ' + (error instanceof Error ? error.message : 'Unknown error'));
     }
   };
 
@@ -184,7 +193,7 @@ export default function WorkOrders() {
       render: (value: unknown) => {
         const status = value as string;
         const iconProps = { size: 18 };
-        let icon;
+        let icon: React.ReactElement;
         switch (status) {
           case 'new':
             icon = <div className="w-4 h-4 rounded-full border-2 border-slate-900 bg-white" />;
@@ -399,7 +408,7 @@ export default function WorkOrders() {
                 className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 cursor-pointer transition-opacity"
                 style={{ backgroundColor: '#f97316' }}
               >
-                Save & Download PDF
+                Save & Open PDF
               </button>
             </div>
           }
@@ -468,8 +477,9 @@ export default function WorkOrders() {
                           <td className="px-4 py-3">
                             <input 
                               type="text"
-                              value={item.name}
+                              defaultValue={item.name}
                               className="text-xs w-full px-2 py-1 border border-gray-300 rounded"
+                              readOnly
                             />
                           </td>
                           <td className="px-4 py-3">
@@ -591,6 +601,7 @@ export default function WorkOrders() {
                       max="100"
                       className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
                       defaultValue={(Number(selectedOrder.tax_rate) * 100).toFixed(2)}
+                      readOnly
                     />
                     <span className="text-xs text-gray-500">%</span>
                   </div>

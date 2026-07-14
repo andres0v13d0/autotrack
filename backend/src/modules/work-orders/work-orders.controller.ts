@@ -69,10 +69,14 @@ export class WorkOrdersController {
     return this.workOrdersService.removeItem(workOrderId, itemId);
   }
 
-  @Get(':id/pdf')
+  @Get(':id/pdf-data')
   @Roles('admin', 'front_desk', 'technician')
-  async getPdf(@Param('id') id: string) {
+  async getPdfData(@Param('id') id: string) {
     const workOrder = await this.workOrdersService.findOne(id);
-    return this.pdfService.generateWorkOrderPdf(workOrder);
+    const settings = await this.pdfService.getSettings();
+    return {
+      workOrder,
+      settings,
+    };
   }
 }
