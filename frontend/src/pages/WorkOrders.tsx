@@ -22,7 +22,7 @@ import Modal from '../components/ui/Modal';
 import Field, { inputCls } from '../components/ui/Field';
 
 const createOrderSchema = z.object({
-  customer_phone: z.string().regex(/^\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}$/, 'Invalid US phone'),
+  customer_id: z.string().min(1, 'Select a customer'),
   vehicle_id: z.string().min(1, 'Select a vehicle'),
   description_needed: z.string().min(3, 'Description required'),
 });
@@ -50,6 +50,10 @@ export default function WorkOrders() {
   const [amountToPay, setAmountToPay] = useState<string>('');
   const [taxRate, setTaxRate] = useState<string>('0');
   const itemNameInputRef = useRef<HTMLInputElement>(null);
+  const [customerSearch, setCustomerSearch] = useState('');
+  const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
+  const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
+  const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
 
   const { data: workOrders = [], isLoading } = useQuery({
     queryKey: ['workOrders'],
@@ -155,20 +159,46 @@ export default function WorkOrders() {
     },
   });
 
-  const handleCustomerChange = async (phone: string) => {
-    if (phone.length >= 10) {
-      setLoadingVehicles(true);
-      try {
-        const allCustomers = await customersService.findAll();
-        const customer = allCustomers.find(c => c.phone === phone);
-        if (customer) {
-          const customerVehicles = await vehiclesService.findByCustomer(customer.id);
-          setVehicles(customerVehicles);
-        }
-      } finally {
-        setLoadingVehicles(false);
-      }
+  const handleSearchCustomer = async (query: string) => {
+    setCustomerSearch(query);
+    setShowCustomerDropdown(true);
+
+    if (query.length < 1) {
+      setCustomerSuggestions([]);
+      return;
     }
+
+    try {
+      const allCustomers = await customersService.findAll();
+      const filtered = allCustomers.filter(c =>
+        c.name.toLowerCase().includes(query.toLowerCase()) ||
+        c.phone.includes(query)
+      );
+      setCustomerSuggestions(filtered);
+    } catch {
+      setCustomerSuggestions([]);
+    }
+  };
+
+  const handleSelectCustomer = async (customer: any) => {
+    setSelectedCustomer(customer);
+    setCustomerSearch(`${customer.name} (${customer.phone})`);
+    setShowCustomerDropdown(false);
+    setLoadingVehicles(true);
+
+    try {
+      const customerVehicles = await vehiclesService.findByCustomer(customer.id);
+      setVehicles(customerVehicles);
+    } finally {
+      setLoadingVehicles(false);
+    }
+  };
+
+  const handleResetCustomer = () => {
+    setSelectedCustomer(null);
+    setCustomerSearch('');
+    setVehicles([]);
+    setCustomerSuggestions([]);
   };
 
   const handleViewOrder = (workOrderId: string) => {
@@ -317,28 +347,90 @@ export default function WorkOrders() {
             setShowCreateModal(false);
             resetCreate();
             setVehicles([]);
+            handleResetCustomer();
           }}
           size="md"
         >
-          <form onSubmit={handleCreateSubmit((v) => createMutation.mutate(v))} className="space-y-4">
-            <Field label="Customer Phone" error={createErrors.customer_phone?.message}>
-              <input
-                {...registerCreate('customer_phone')}
-                className={inputCls(!!createErrors.customer_phone)}
-                placeholder="(305) 555-1234"
-                onChange={(e) => {
-                  handleCustomerChange(e.target.value);
-                }}
-              />
-            </Field>
+          <form onSubmit={handleCreateSubmit((v) => {
+            if (!selectedCustomer) {
+              console.error('No customer selected');
+              return;
+            }
+            createMutation.mutate({ ...v, customer_id: selectedCustomer.id });
+          })} className="space-y-4">
+            {/* Customer Search */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-sm font-semibold text-slate-900">Customer</label>
+                {selectedCustomer && (
+                  <button
+                    type="button"
+                    onClick={() => handleResetCustomer()}
+                    className="text-xs text-red-600 hover:text-red-700 hover:underline cursor-pointer"
+                  >
+                    Clear
+                  </button>
+                )}
+              </div>
 
+              {!selectedCustomer ? (
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Search customer by name or phone..."
+                    value={customerSearch}
+                    onChange={(e) => handleSearchCustomer(e.target.value)}
+                    onFocus={() => setShowCustomerDropdown(true)}
+                    className="w-full px-4 py-3 rounded-lg border-2 border-red-300 focus:outline-none focus:border-red-500 text-base"
+                  />
+                  <div className="text-xs text-red-600 mt-1 flex items-center gap-1">
+                    <div className="w-1 h-1 bg-red-600 rounded-full" />
+                    Please select a customer
+                  </div>
+
+                  {showCustomerDropdown && customerSuggestions.length > 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 max-h-60 overflow-y-auto">
+                      {customerSuggestions.map((customer) => (
+                        <button
+                          key={customer.id}
+                          type="button"
+                          onClick={() => handleSelectCustomer(customer)}
+                          className="w-full text-left px-4 py-3 hover:bg-slate-50 border-b border-slate-100 last:border-b-0 transition-colors cursor-pointer"
+                        >
+                          <div className="font-semibold text-slate-900">{customer.name}</div>
+                          <div className="text-xs text-slate-600">{customer.phone}</div>
+                        </button>
+                      ))}
+                    </div>
+                  )}
+
+                  {showCustomerDropdown && customerSearch.length > 0 && customerSuggestions.length === 0 && (
+                    <div className="absolute top-full left-0 right-0 mt-1 bg-white border border-slate-200 rounded-lg shadow-lg z-10 p-4 text-center text-sm text-slate-600">
+                      No customers found
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="px-4 py-3 bg-green-50 border-2 border-green-300 rounded-lg">
+                  <div className="font-semibold text-green-900">{selectedCustomer.name}</div>
+                  <div className="text-sm text-green-700">{selectedCustomer.phone}</div>
+                </div>
+              )}
+            </div>
+
+            {/* Vehicle Select */}
             <Field label={t('vehicles.plate')} error={createErrors.vehicle_id?.message}>
               <select
                 {...registerCreate('vehicle_id')}
-                className={inputCls(!!createErrors.vehicle_id)}
-                disabled={loadingVehicles || vehicles.length === 0}
+                className={inputCls(!!createErrors.vehicle_id || (selectedCustomer && vehicles.length === 0))}
+                disabled={!selectedCustomer || loadingVehicles || vehicles.length === 0}
               >
-                <option value="">Select a vehicle</option>
+                <option value="">
+                  {!selectedCustomer ? 'Select a customer first' : 
+                   loadingVehicles ? 'Loading vehicles...' : 
+                   vehicles.length === 0 ? 'No vehicles found' : 
+                   'Select a vehicle'}
+                </option>
                 {vehicles.map((v) => (
                   <option key={v.id} value={v.id}>
                     {v.plate} - {v.model}
@@ -347,6 +439,7 @@ export default function WorkOrders() {
               </select>
             </Field>
 
+            {/* Description */}
             <Field label="Description" error={createErrors.description_needed?.message}>
               <textarea
                 {...registerCreate('description_needed')}
@@ -362,6 +455,7 @@ export default function WorkOrders() {
                   setShowCreateModal(false);
                   resetCreate();
                   setVehicles([]);
+                  handleResetCustomer();
                 }}
                 className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
               >
