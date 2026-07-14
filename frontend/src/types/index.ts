@@ -33,3 +33,14 @@ export interface Customer {
   created_at: string;
   vehicles?: Vehicle[];
 }
+
+export type PaymentMethod = 'zelle' | 'card' | 'cash';
+
+export interface Payment {
+  id: string;
+  work_order_id: string;
+  amount: number;
+  method: PaymentMethod;
+  date: string;
+  created_at: string;
+}
