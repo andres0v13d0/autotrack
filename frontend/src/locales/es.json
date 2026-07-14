@@ -71,7 +71,33 @@
   "workOrders": {
     "title": "Órdenes de Trabajo",
     "new": "Nueva Orden",
-    "description": "Descripción"
+    "description": "Descripción",
+    "generatePdf": "Descargar PDF",
+    "items": "Ítems",
+    "itemsCount": "ítems",
+    "noItems": "Sin ítems agregados aún",
+    "addItem": "Agregar Ítem",
+    "type": "Tipo",
+    "itemType": {
+      "part": "Pieza",
+      "labor": "Mano de Obra"
+    },
+    "itemName": "Nombre del Ítem",
+    "price": "Precio",
+    "qty": "Cantidad",
+    "lineTotal": "Total Línea",
+    "summary": "Resumen",
+    "subtotal": "Subtotal",
+    "tax": "Impuesto",
+    "total": "Total",
+    "amountPaid": "Monto Pagado",
+    "balanceDue": "Saldo Pendiente",
+    "recordPayment": "Grabar Pago",
+    "addPayment": "+ Agregar",
+    "paymentAmount": "Monto",
+    "paymentMethod": "Método de Pago",
+    "paymentDate": "Fecha",
+    "pdfComingSoon": "PDF descargado exitosamente"
   },
   "common": {
     "language": "Idioma",

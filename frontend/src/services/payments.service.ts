@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-export type PaymentMethod = 'cash' | 'card' | 'check' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'zelle' | 'check' | 'other';
 
 export interface Payment {
   id: string;

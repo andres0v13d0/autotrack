@@ -5,7 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   OneToMany,
-  ForeignKey,
+  JoinColumn,
 } from 'typeorm';
 import { Vehicle } from '../vehicles/vehicle.entity';
 import { User } from '../users/user.entity';
@@ -17,7 +17,8 @@ export class WorkOrder {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Vehicle, (vehicle) => vehicle.workOrders)
+  @ManyToOne(() => Vehicle, (vehicle) => vehicle.workOrders, { eager: true })
+  @JoinColumn({ name: 'vehicle_id' })
   vehicle: Vehicle;
 
   @Column('uuid')
@@ -37,6 +38,12 @@ export class WorkOrder {
 
   @Column('decimal', { precision: 10, scale: 2 })
   total: number;
+
+  @Column({ type: 'varchar', default: 'new' })
+  delivery_status: 'new' | 'in_progress' | 'ready' | 'delivered';
+
+  @Column({ type: 'int', unique: true, nullable: true })
+  order_number: number;
 
   @ManyToOne(() => User)
   created_by: User;

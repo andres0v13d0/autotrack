@@ -11,6 +11,7 @@ import {
 import { WorkOrdersService } from './work-orders.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
 import { AddItemDto } from './dto/add-item.dto';
+import { PdfService } from './pdf.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -18,7 +19,10 @@ import { Roles } from '../../common/decorators/roles.decorator';
 @Controller('work-orders')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class WorkOrdersController {
-  constructor(private workOrdersService: WorkOrdersService) {}
+  constructor(
+    private workOrdersService: WorkOrdersService,
+    private pdfService: PdfService,
+  ) {}
 
   @Post()
   @Roles('admin', 'front_desk')
@@ -54,5 +58,12 @@ export class WorkOrdersController {
   @Roles('admin', 'front_desk', 'technician')
   removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
     return this.workOrdersService.removeItem(workOrderId, itemId);
+  }
+
+  @Get(':id/pdf')
+  @Roles('admin', 'front_desk', 'technician')
+  async getPdf(@Param('id') id: string) {
+    const workOrder = await this.workOrdersService.findOne(id);
+    return this.pdfService.generateWorkOrderPdf(workOrder);
   }
 }

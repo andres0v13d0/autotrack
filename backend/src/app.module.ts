@@ -9,12 +9,14 @@ import { CustomersModule } from './modules/customers/customers.module';
 import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
+import { SettingsModule } from './modules/settings/settings.module';
 import { User } from './modules/users/user.entity';
 import { Customer } from './modules/customers/customer.entity';
 import { Vehicle } from './modules/vehicles/vehicle.entity';
 import { WorkOrder } from './modules/work-orders/work-order.entity';
 import { WorkOrderItem } from './modules/work-orders/work-order-item.entity';
 import { Payment } from './modules/payments/payment.entity';
+import { Setting } from './modules/settings/setting.entity';
 
 @Module({
   imports: [
@@ -30,7 +32,7 @@ import { Payment } from './modules/payments/payment.entity';
           return {
             type: 'postgres',
             url: databaseUrl,
-            entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment],
+            entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment, Setting],
             synchronize: true,
             ssl: { rejectUnauthorized: false },
             logging: false,
@@ -45,7 +47,7 @@ import { Payment } from './modules/payments/payment.entity';
           username: config.get<string>('DATABASE_USER', 'postgres'),
           password: config.get<string>('DATABASE_PASSWORD', ''),
           database: config.get<string>('DATABASE_NAME', 'shop_management'),
-          entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment],
+          entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment, Setting],
           synchronize: true,
           logging: true,
         };
@@ -58,6 +60,7 @@ import { Payment } from './modules/payments/payment.entity';
     VehiclesModule,
     WorkOrdersModule,
     PaymentsModule,
+    SettingsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

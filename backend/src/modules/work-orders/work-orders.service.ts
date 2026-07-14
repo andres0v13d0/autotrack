@@ -20,6 +20,13 @@ export class WorkOrdersService {
   async create(dto: CreateWorkOrderDto, userId: string): Promise<WorkOrder> {
     const taxRate = this.configService.get<number>('TAX_RATE', 0.0875);
 
+    // Generate order_number: find the max and increment
+    const lastOrder = await this.workOrdersRepo.findOne({
+      order: { order_number: 'DESC' },
+    });
+    
+    const orderNumber = (lastOrder?.order_number || 1000) + 1;
+
     const workOrder = this.workOrdersRepo.create({
       vehicle_id: dto.vehicle_id,
       description_needed: dto.description_needed,
@@ -27,17 +34,38 @@ export class WorkOrdersService {
       tax_rate: taxRate,
       tax: 0,
       total: 0,
+      delivery_status: 'new',
+      order_number: orderNumber,
       created_by_id: userId,
     });
 
-    return this.workOrdersRepo.save(workOrder);
+    const saved = await this.workOrdersRepo.save(workOrder);
+    
+    // Reload with relations
+    const reloaded = await this.workOrdersRepo.findOne({
+      where: { id: saved.id },
+      relations: {
+        items: true,
+        vehicle: {
+          customer: true,
+        },
+      },
+    });
+    
+    if (!reloaded) {
+      throw new NotFoundException(`Work order ${saved.id} not found after creation`);
+    }
+    
+    return reloaded;
   }
 
   async findAll(): Promise<WorkOrder[]> {
     return this.workOrdersRepo.find({
       relations: {
         items: true,
-        vehicle: true,
+        vehicle: {
+          customer: true,
+        },
       },
       order: { created_at: 'DESC' },
     });
@@ -48,6 +76,9 @@ export class WorkOrdersService {
       where: { vehicle_id: vehicleId },
       relations: {
         items: true,
+        vehicle: {
+          customer: true,
+        },
       },
       order: { created_at: 'DESC' },
     });
@@ -58,7 +89,9 @@ export class WorkOrdersService {
       where: { id },
       relations: {
         items: true,
-        vehicle: true,
+        vehicle: {
+          customer: true,
+        },
         created_by: true,
       },
     });
@@ -124,6 +157,23 @@ export class WorkOrdersService {
     order.tax = tax;
     order.total = total;
 
-    return this.workOrdersRepo.save(order);
+    await this.workOrdersRepo.save(order);
+    
+    // Return with relations
+    const reloaded = await this.workOrdersRepo.findOne({
+      where: { id: workOrderId },
+      relations: {
+        items: true,
+        vehicle: {
+          customer: true,
+        },
+      },
+    });
+    
+    if (!reloaded) {
+      throw new NotFoundException(`Work order ${workOrderId} not found after recalculation`);
+    }
+    
+    return reloaded;
   }
 }

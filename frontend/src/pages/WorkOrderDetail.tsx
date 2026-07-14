@@ -7,6 +7,7 @@ import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import { workOrdersService } from '../services/workOrders.service';
 import { paymentsService } from '../services/payments.service';
+import { pdfService } from '../services/pdf.service';
 import type { WorkOrderItemType, PaymentMethod } from '../types/workOrder';
 
 const MOCK_VEHICLES: Record<string, { plate: string; model: string; customerId: string; customerName: string }> = {
@@ -86,10 +87,14 @@ export default function WorkOrderDetail() {
     onSuccess: () => { invalidate(); setShowPaymentForm(false); resetPayment(); },
   });
 
-  const handlePdf = () => {
-    console.log('Generate PDF — coming soon');
-    setPdfToast(true);
-    setTimeout(() => setPdfToast(false), 2500);
+  const handlePdf = async () => {
+    try {
+      await pdfService.downloadWorkOrderPdf(workOrderId);
+      setPdfToast(true);
+      setTimeout(() => setPdfToast(false), 2500);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+    }
   };
 
   if (isLoading || !order) {
@@ -256,16 +261,16 @@ export default function WorkOrderDetail() {
             <div className="space-y-2 text-sm">
               <div className="flex justify-between text-gray-600">
                 <span>{t('workOrders.subtotal')}</span>
-                <span>${order?.subtotal.toFixed(2)}</span>
+                <span>${typeof order?.subtotal === 'string' ? parseFloat(order.subtotal).toFixed(2) : (order?.subtotal ?? 0).toFixed(2)}</span>
               </div>
               <div className="flex justify-between text-gray-600">
-                <span>{t('workOrders.tax')} ({(order?.tax_rate ? order.tax_rate * 100 : 0).toFixed(2)}%)</span>
-                <span>${order?.tax.toFixed(2)}</span>
+                <span>{t('workOrders.tax')} ({(order?.tax_rate ? Number(order.tax_rate) * 100 : 0).toFixed(2)}%)</span>
+                <span>${typeof order?.tax === 'string' ? parseFloat(order.tax).toFixed(2) : (order?.tax ?? 0).toFixed(2)}</span>
               </div>
               <div className="border-t border-gray-100 pt-2 mt-2 flex justify-between font-bold text-base"
                 style={{ color: '#0f1f3d' }}>
                 <span>{t('workOrders.total')}</span>
-                <span>${order?.total.toFixed(2)}</span>
+                <span>${typeof order?.total === 'string' ? parseFloat(order.total).toFixed(2) : (order?.total ?? 0).toFixed(2)}</span>
               </div>
 
               {balance && (

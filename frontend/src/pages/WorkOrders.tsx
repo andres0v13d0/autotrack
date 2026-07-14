@@ -1,6 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 import { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -8,13 +7,16 @@ import { z } from 'zod';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 import Table from '../components/ui/Table';
+import WorkOrderFilters from '../components/WorkOrderFilters';
 import type { TableColumn } from '../components/ui/Table';
 import { workOrdersService } from '../services/workOrders.service';
 import { vehiclesService } from '../services/vehicles.service';
 import { customersService } from '../services/customers.service';
+import { paymentsService } from '../services/payments.service';
+import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
 import type { Vehicle } from '../types';
-import { Eye, Plus } from 'lucide-react';
+import { Eye, Plus, X } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Field, { inputCls } from '../components/ui/Field';
 
@@ -25,13 +27,34 @@ const createOrderSchema = z.object({
 });
 type CreateOrderValues = z.infer<typeof createOrderSchema>;
 
+interface ItemForm {
+  type: 'part' | 'labor';
+  name: string;
+  price: string;
+  qty: string;
+}
+
+interface PaymentForm {
+  amount: string;
+  method: 'cash' | 'card' | 'zelle' | 'check' | 'other';
+  date: string;
+}
+
 export default function WorkOrders() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const qc = useQueryClient();
-  const [showModal, setShowModal] = useState(false);
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
+  const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
+  const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [pdfToast, setPdfToast] = useState(false);
+  const [editingTax, setEditingTax] = useState(false);
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<'new' | 'in_progress' | 'ready' | 'delivered' | 'all'>('all');
+  const [paymentStatusFilter, setPaymentStatusFilter] = useState<'pending' | 'partial' | 'paid' | 'all'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
 
   const { data: workOrders = [], isLoading } = useQuery({
     queryKey: ['workOrders'],
@@ -44,8 +67,28 @@ export default function WorkOrders() {
     },
   });
 
-  const { register, handleSubmit, reset, formState: { errors } } = useForm<CreateOrderValues>({
+  const { data: selectedOrder } = useQuery({
+    queryKey: ['work-order', selectedWorkOrderId],
+    queryFn: () => selectedWorkOrderId ? workOrdersService.getOne(selectedWorkOrderId) : null,
+    enabled: !!selectedWorkOrderId && showDetailModal,
+  });
+
+  const { data: balance } = useQuery({
+    queryKey: ['order-balance', selectedWorkOrderId],
+    queryFn: () => selectedWorkOrderId ? paymentsService.getOrderBalance(selectedWorkOrderId) : null,
+    enabled: !!selectedWorkOrderId && showDetailModal,
+  });
+
+  const { register: registerCreate, handleSubmit: handleCreateSubmit, reset: resetCreate, formState: { errors: createErrors } } = useForm<CreateOrderValues>({
     resolver: zodResolver(createOrderSchema),
+  });
+
+  const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
+    defaultValues: { type: 'part', qty: '1' },
+  });
+
+  const { register: registerPayment, handleSubmit: handlePaymentSubmit, reset: resetPayment, formState: { errors: paymentErrors } } = useForm<PaymentForm>({
+    defaultValues: { method: 'cash', date: new Date().toISOString().split('T')[0] },
   });
 
   const createMutation = useMutation({
@@ -54,8 +97,41 @@ export default function WorkOrders() {
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workOrders'] });
-      setShowModal(false);
-      reset();
+      setShowCreateModal(false);
+      resetCreate();
+    },
+  });
+
+  const addItemMutation = useMutation({
+    mutationFn: (values: ItemForm) =>
+      selectedWorkOrderId ? workOrdersService.addItem(selectedWorkOrderId, {
+        type: values.type,
+        name: values.name,
+        price: parseFloat(values.price),
+        qty: parseInt(values.qty, 10),
+      }) : Promise.reject('No work order selected'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+      resetItem({ type: 'part', name: '', price: '', qty: '1' });
+    },
+  });
+
+  const removeItemMutation = useMutation({
+    mutationFn: (itemId: string) =>
+      selectedWorkOrderId ? workOrdersService.removeItem(selectedWorkOrderId, itemId) : Promise.reject('No work order selected'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+    },
+  });
+
+  const addPaymentMutation = useMutation({
+    mutationFn: (values: PaymentForm) =>
+      selectedWorkOrderId ? paymentsService.create(selectedWorkOrderId, parseFloat(values.amount), values.method, values.date) : Promise.reject('No work order selected'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+      qc.invalidateQueries({ queryKey: ['order-balance', selectedWorkOrderId] });
+      setShowPaymentForm(false);
+      resetPayment({ method: 'cash', amount: '', date: new Date().toISOString().split('T')[0] });
     },
   });
 
@@ -75,28 +151,72 @@ export default function WorkOrders() {
     }
   };
 
-  const onSubmit = (values: CreateOrderValues) => {
-    createMutation.mutate(values);
+  const handleViewOrder = (workOrderId: string) => {
+    setSelectedWorkOrderId(workOrderId);
+    setShowDetailModal(true);
+  };
+
+  // For now, just filter by delivery status since payment status requires additional queries
+  const filteredWorkOrders = workOrders.filter(order => {
+    const deliveryMatch = deliveryStatusFilter === 'all' || order.delivery_status === deliveryStatusFilter;
+    const searchMatch = !searchQuery || 
+      order.order_number?.toString().includes(searchQuery) ||
+      order.vehicle?.plate?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.vehicle?.customer?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.description_needed?.toLowerCase().includes(searchQuery.toLowerCase());
+    return deliveryMatch && searchMatch;
+  });
+
+  const handlePdf = async () => {
+    if (!selectedWorkOrderId) return;
+    try {
+      await pdfService.downloadWorkOrderPdf(selectedWorkOrderId);
+      setPdfToast(true);
+      setTimeout(() => setPdfToast(false), 2500);
+    } catch (error) {
+      console.error('Failed to download PDF:', error);
+    }
   };
 
   const columns: TableColumn<WorkOrder>[] = [
     {
-      key: 'id',
-      label: 'Order #',
-      width: '12%',
-      render: (value: string) => `#${value.slice(0, 8)}`,
+      key: 'delivery_status',
+      label: '',
+      width: '5%',
+      render: (value: unknown) => {
+        const status = value as string;
+        const colors: Record<string, string> = {
+          new: '⚪',
+          in_progress: '🟠',
+          ready: '🔵',
+          delivered: '🟢',
+        };
+        return colors[status] || '⚪';
+      },
     },
     {
-      key: 'vehicle',
+      key: 'order_number',
+      label: 'Order #',
+      width: '10%',
+      render: (value: unknown) => `#${value}`,
+    },
+    {
+      key: 'vehicle_plate',
       label: t('vehicles.plate'),
       width: '15%',
-      render: (_value: unknown, row: WorkOrder) => row.vehicle?.plate || 'N/A',
+      render: (_value: unknown, row: WorkOrder) => {
+        if (row.vehicle?.plate) return row.vehicle.plate;
+        return 'N/A';
+      },
     },
     {
-      key: 'vehicle',
+      key: 'vehicle_model',
       label: t('vehicles.model'),
       width: '18%',
-      render: (_value: unknown, row: WorkOrder) => row.vehicle?.model || 'N/A',
+      render: (_value: unknown, row: WorkOrder) => {
+        if (row.vehicle?.model) return row.vehicle.model;
+        return 'N/A';
+      },
     },
     {
       key: 'description_needed',
@@ -112,8 +232,9 @@ export default function WorkOrders() {
       label: 'Total',
       width: '12%',
       render: (value: unknown) => {
-        if (typeof value !== 'number' || isNaN(value)) return '$0.00';
-        return `$${value.toFixed(2)}`;
+        const num = typeof value === 'string' ? parseFloat(value) : typeof value === 'number' ? value : 0;
+        if (isNaN(num)) return '$0.00';
+        return `$${num.toFixed(2)}`;
       },
     },
     {
@@ -129,21 +250,6 @@ export default function WorkOrders() {
         }
       },
     },
-    {
-      key: 'id',
-      label: 'Action',
-      width: '10%',
-      render: (_value: string, row: WorkOrder) => (
-        <button
-          onClick={() => navigate(`/vehicles/${row.vehicle_id}/work-orders/${row.id}`)}
-          className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold transition-all hover:scale-105 cursor-pointer"
-          style={{ backgroundColor: '#e0f2fe', color: '#0284c7' }}
-        >
-          <Eye size={14} />
-          View
-        </button>
-      ),
-    },
   ];
 
   return (
@@ -153,7 +259,7 @@ export default function WorkOrders() {
           {t('nav.workOrders')}
         </h1>
         <button
-          onClick={() => setShowModal(true)}
+          onClick={() => setShowCreateModal(true)}
           className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer inline-flex items-center gap-2"
           style={{ backgroundColor: '#f97316' }}
         >
@@ -162,30 +268,48 @@ export default function WorkOrders() {
         </button>
       </div>
 
+      {/* Delivery Status Filters */}
+      <WorkOrderFilters
+        deliveryStatus={deliveryStatusFilter}
+        paymentStatus={paymentStatusFilter}
+        onDeliveryStatusChange={setDeliveryStatusFilter}
+        onPaymentStatusChange={setPaymentStatusFilter}
+        searchQuery={searchQuery}
+        onSearchChange={setSearchQuery}
+      />
+
       <Table<WorkOrder>
         columns={columns}
-        data={workOrders}
+        data={filteredWorkOrders}
         isLoading={isLoading}
         emptyMessage="No work orders found"
         rowKey="id"
+        actions={[
+          {
+            label: 'View',
+            icon: <Eye size={14} />,
+            onClick: (row) => handleViewOrder(row.id),
+            variant: 'primary',
+          },
+        ]}
       />
 
       {/* Create Order Modal */}
-      {showModal && (
+      {showCreateModal && (
         <Modal 
           title="New Work Order"
           onClose={() => {
-            setShowModal(false);
-            reset();
+            setShowCreateModal(false);
+            resetCreate();
             setVehicles([]);
           }}
           size="md"
         >
-          <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-            <Field label="Customer Phone" error={errors.customer_phone?.message}>
+          <form onSubmit={handleCreateSubmit((v) => createMutation.mutate(v))} className="space-y-4">
+            <Field label="Customer Phone" error={createErrors.customer_phone?.message}>
               <input
-                {...register('customer_phone')}
-                className={inputCls(!!errors.customer_phone)}
+                {...registerCreate('customer_phone')}
+                className={inputCls(!!createErrors.customer_phone)}
                 placeholder="(305) 555-1234"
                 onChange={(e) => {
                   handleCustomerChange(e.target.value);
@@ -193,10 +317,10 @@ export default function WorkOrders() {
               />
             </Field>
 
-            <Field label={t('vehicles.plate')} error={errors.vehicle_id?.message}>
+            <Field label={t('vehicles.plate')} error={createErrors.vehicle_id?.message}>
               <select
-                {...register('vehicle_id')}
-                className={inputCls(!!errors.vehicle_id)}
+                {...registerCreate('vehicle_id')}
+                className={inputCls(!!createErrors.vehicle_id)}
                 disabled={loadingVehicles || vehicles.length === 0}
               >
                 <option value="">Select a vehicle</option>
@@ -208,10 +332,10 @@ export default function WorkOrders() {
               </select>
             </Field>
 
-            <Field label="Description" error={errors.description_needed?.message}>
+            <Field label="Description" error={createErrors.description_needed?.message}>
               <textarea
-                {...register('description_needed')}
-                className={`${inputCls(!!errors.description_needed)} min-h-20 resize-none`}
+                {...registerCreate('description_needed')}
+                className={`${inputCls(!!createErrors.description_needed)} min-h-20 resize-none`}
                 placeholder="What needs to be done?"
               />
             </Field>
@@ -220,8 +344,8 @@ export default function WorkOrders() {
               <button
                 type="button"
                 onClick={() => {
-                  setShowModal(false);
-                  reset();
+                  setShowCreateModal(false);
+                  resetCreate();
                   setVehicles([]);
                 }}
                 className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -238,6 +362,271 @@ export default function WorkOrders() {
               </button>
             </div>
           </form>
+        </Modal>
+      )}
+
+      {/* Work Order Detail Modal */}
+      {showDetailModal && selectedOrder && (
+        <Modal
+          title=""
+          onClose={() => {
+            setShowDetailModal(false);
+            setSelectedWorkOrderId(null);
+            setShowPaymentForm(false);
+            setEditingTax(false);
+          }}
+          size="xl"
+        >
+          <div className="space-y-6 max-h-[85vh] overflow-y-auto">
+            {/* Header Section */}
+            <div className="border-b-2 border-gray-200 pb-6">
+              <div className="flex items-start justify-between mb-4">
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Order Number</p>
+                  <h1 className="text-2xl font-bold" style={{ color: '#0f1f3d' }}>#{selectedOrder.order_number}</h1>
+                </div>
+                <div className="text-right space-y-2">
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Payment Status</p>
+                    <div className={`px-3 py-1 rounded-lg text-xs font-bold text-white inline-block ${
+                      balance?.paymentStatus === 'paid' ? 'bg-green-600' :
+                      balance?.paymentStatus === 'partial' ? 'bg-amber-600' :
+                      'bg-red-600'
+                    }`}>
+                      {balance?.paymentStatus === 'paid' ? '✓ PAID' :
+                       balance?.paymentStatus === 'partial' ? '◐ PARTIAL' :
+                       '○ PENDING'}
+                    </div>
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Delivery Status</p>
+                    <select 
+                      value={modalDeliveryStatus} 
+                      onChange={(e) => setModalDeliveryStatus(e.target.value as any)}
+                      className="text-xs font-semibold px-2 py-1 rounded-lg border border-gray-300"
+                    >
+                      <option value="new">🔵 New</option>
+                      <option value="in_progress">🟠 In Progress</option>
+                      <option value="ready">🔵 Ready</option>
+                      <option value="delivered">🟢 Delivered</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-6 text-sm">
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Vehicle</p>
+                  <p className="font-bold" style={{ color: '#0f1f3d' }}>{selectedOrder.vehicle?.plate}</p>
+                  <p className="text-xs text-gray-600">{selectedOrder.vehicle?.model}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide mb-1">Description</p>
+                  <p className="text-xs text-gray-700">{selectedOrder.description_needed}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Items Section */}
+            <div>
+              <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Work Items</h2>
+              
+              {selectedOrder.items.length === 0 ? (
+                <div className="bg-gray-50 border-2 border-dashed border-gray-300 rounded-lg p-6 text-center mb-4">
+                  <p className="text-gray-500 text-sm">{t('workOrders.noItems')}</p>
+                </div>
+              ) : (
+                <div className="bg-white border border-gray-200 rounded-lg overflow-hidden mb-4">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ backgroundColor: '#f3f4f6' }}>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.type')}</th>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.itemName')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
+                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">Action</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {selectedOrder.items.map((item, idx) => (
+                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3">
+                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.type === 'part' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
+                              {t(`workOrders.itemType.${item.type}`)}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-xs font-medium text-gray-900">{item.name}</td>
+                          <td className="px-4 py-3 text-right text-xs font-medium text-gray-900">${item.price.toFixed(2)}</td>
+                          <td className="px-4 py-3 text-center text-xs font-medium text-gray-900">{item.qty}</td>
+                          <td className="px-4 py-3 text-right text-xs font-bold text-gray-900">${(item.price * item.qty).toFixed(2)}</td>
+                          <td className="px-4 py-3 text-right">
+                            <button
+                              onClick={() => removeItemMutation.mutate(item.id)}
+                              className="text-red-500 hover:text-red-700 transition-colors cursor-pointer font-medium"
+                              disabled={removeItemMutation.isPending}
+                            >
+                              <X size={16} />
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Add Item Form */}
+              <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5">
+                <h3 className="font-bold text-sm mb-4" style={{ color: '#0f1f3d' }}>{t('workOrders.addItem')}</h3>
+                <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))} className="grid grid-cols-5 gap-3">
+                  <Field label={t('workOrders.type')} error={itemErrors.type?.message}>
+                    <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs`}>
+                      <option value="part">{t('workOrders.itemType.part')}</option>
+                      <option value="labor">{t('workOrders.itemType.labor')}</option>
+                    </select>
+                  </Field>
+                  <Field label={t('workOrders.itemName')} error={itemErrors.name?.message}>
+                    <input {...registerItem('name')} className={`${inputCls(!!itemErrors.name)} text-xs`} placeholder="Item" />
+                  </Field>
+                  <Field label={t('workOrders.price')} error={itemErrors.price?.message}>
+                    <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs`} placeholder="0.00" />
+                  </Field>
+                  <Field label={t('workOrders.qty')} error={itemErrors.qty?.message}>
+                    <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs`} placeholder="1" />
+                  </Field>
+                  <div className="flex items-end">
+                    <button type="submit" disabled={addItemMutation.isPending} className="w-full px-3 py-2 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer" style={{ backgroundColor: '#f97316' }}>
+                      {addItemMutation.isPending ? '...' : '+'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+
+            {/* Totals Section */}
+            <div className="bg-gradient-to-br from-gray-50 to-white border-2 border-gray-300 rounded-lg p-6">
+              <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Summary</h2>
+              <div className="space-y-3 text-sm">
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Subtotal</span>
+                  <span className="font-semibold text-gray-900">${typeof selectedOrder.subtotal === 'string' ? parseFloat(selectedOrder.subtotal).toFixed(2) : selectedOrder.subtotal.toFixed(2)}</span>
+                </div>
+                <div className="flex justify-between items-center">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-600">Tax</span>
+                    {!editingTax ? (
+                      <>
+                        <span className="text-xs text-gray-500">({(Number(selectedOrder.tax_rate) * 100).toFixed(2)}%)</span>
+                        <button
+                          onClick={() => setEditingTax(true)}
+                          className="text-xs text-blue-600 hover:text-blue-700 cursor-pointer"
+                        >
+                          Edit
+                        </button>
+                      </>
+                    ) : (
+                      <div className="flex items-center gap-1">
+                        <input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          max="100"
+                          className="w-12 px-2 py-1 border border-gray-300 rounded text-xs"
+                          defaultValue={(Number(selectedOrder.tax_rate) * 100).toFixed(2)}
+                        />
+                        <span className="text-xs text-gray-500">%</span>
+                        <button
+                          onClick={() => setEditingTax(false)}
+                          className="text-xs text-green-600 hover:text-green-700 cursor-pointer font-bold"
+                        >
+                          ✓
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                  <span className="font-semibold text-gray-900">${typeof selectedOrder.tax === 'string' ? parseFloat(selectedOrder.tax).toFixed(2) : selectedOrder.tax.toFixed(2)}</span>
+                </div>
+                <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center font-bold">
+                  <span style={{ color: '#0f1f3d' }}>Total Due</span>
+                  <span style={{ color: '#f97316' }} className="text-lg">${typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total).toFixed(2) : selectedOrder.total.toFixed(2)}</span>
+                </div>
+                {balance && (
+                  <>
+                    <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center text-xs">
+                      <span className="text-gray-600">Amount Paid</span>
+                      <span className="font-semibold text-green-600">${balance.amountPaid.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between items-center text-xs">
+                      <span className={`font-bold ${balance.balanceDue! > 0 ? 'text-red-600' : 'text-green-600'}`}>Balance Due</span>
+                      <span className={`text-sm font-bold ${balance.balanceDue! > 0 ? 'text-red-600' : 'text-green-600'}`}>${balance.balanceDue!.toFixed(2)}</span>
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Payment Section */}
+            <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg font-bold" style={{ color: '#0f1f3d' }}>{t('workOrders.recordPayment')}</h2>
+                {!showPaymentForm && balance && balance.balanceDue > 0 && (
+                  <button
+                    onClick={() => setShowPaymentForm(true)}
+                    className="px-3 py-1 rounded-lg text-xs font-bold text-white hover:opacity-90 cursor-pointer"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    {t('workOrders.addPayment')}
+                  </button>
+                )}
+              </div>
+
+              {showPaymentForm && (
+                <form onSubmit={handlePaymentSubmit((v) => addPaymentMutation.mutate(v))} className="space-y-4">
+                  <Field label={t('workOrders.paymentAmount')} error={paymentErrors.amount?.message}>
+                    <input {...registerPayment('amount')} type="number" step="0.01" min="0.01" className={`${inputCls(!!paymentErrors.amount)} text-sm`} placeholder="0.00" />
+                  </Field>
+                  <Field label={t('workOrders.paymentMethod')} error={paymentErrors.method?.message}>
+                    <select {...registerPayment('method')} className={`${inputCls(!!paymentErrors.method)} text-sm`}>
+                      <option value="cash">Cash</option>
+                      <option value="card">Card</option>
+                      <option value="zelle">Zelle</option>
+                      <option value="check">Check</option>
+                      <option value="other">Other</option>
+                    </select>
+                  </Field>
+                  <Field label={t('workOrders.paymentDate')} error={paymentErrors.date?.message}>
+                    <input {...registerPayment('date')} type="date" className={`${inputCls(!!paymentErrors.date)} text-sm`} />
+                  </Field>
+                  <div className="flex justify-end gap-3 pt-2">
+                    <button type="button" onClick={() => setShowPaymentForm(false)} className="px-4 py-2 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-100 cursor-pointer font-semibold transition-colors">
+                      {t('common.cancel')}
+                    </button>
+                    <button type="submit" disabled={addPaymentMutation.isPending} className="px-4 py-2 text-sm rounded-lg text-white font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-colors" style={{ backgroundColor: '#f97316' }}>
+                      {addPaymentMutation.isPending ? 'Processing...' : t('common.save')}
+                    </button>
+                  </div>
+                </form>
+              )}
+            </div>
+
+            {/* Download PDF Button */}
+            <div className="flex justify-center pt-4 border-t border-gray-200">
+              <button
+                onClick={handlePdf}
+                className="px-6 py-2 rounded-lg text-sm font-bold text-white transition-opacity hover:opacity-90 cursor-pointer"
+                style={{ backgroundColor: '#0f1f3d' }}
+              >
+                📄 Download Invoice PDF
+              </button>
+            </div>
+          </div>
+
+          {pdfToast && (
+            <div className="fixed bottom-6 right-6 z-50 bg-green-600 text-white text-xs px-4 py-3 rounded-lg shadow-lg font-semibold">
+              ✓ {t('workOrders.pdfComingSoon')}
+            </div>
+          )}
         </Modal>
       )}
     </Layout>

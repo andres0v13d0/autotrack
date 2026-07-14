@@ -1,14 +1,7 @@
 export type WorkOrderItemType = 'part' | 'labor';
-export type PaymentMethod = 'cash' | 'card' | 'check' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'zelle' | 'check' | 'other';
 export type PaymentStatus = 'pending' | 'partial' | 'paid';
-
-export interface WorkOrderItem {
-  id: string;
-  type: WorkOrderItemType;
-  name: string;
-  price: number;
-  qty: number;
-}
+export type DeliveryStatus = 'new' | 'in_progress' | 'ready' | 'delivered';
 
 export interface Vehicle {
   id: string;
@@ -17,6 +10,22 @@ export interface Vehicle {
   model: string;
   description?: string;
   created_at: string;
+  customer?: Customer;
+}
+
+export interface Customer {
+  id: string;
+  name: string;
+  phone: string;
+  created_at: string;
+}
+
+export interface WorkOrderItem {
+  id: string;
+  type: WorkOrderItemType;
+  name: string;
+  price: number;
+  qty: number;
 }
 
 export interface WorkOrder {
@@ -28,6 +37,8 @@ export interface WorkOrder {
   tax_rate: number;
   tax: number;
   total: number;
+  order_number: number;
+  delivery_status: DeliveryStatus;
   created_at: string;
   vehicle?: Vehicle;
   // Derived fields (calculated on frontend from payments)

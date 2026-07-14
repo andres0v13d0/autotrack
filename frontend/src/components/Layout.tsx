@@ -3,7 +3,7 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import LanguageToggle from './LanguageToggle';
-import { Menu, X, LogOut, LayoutDashboard, Users, Users2, ChevronDown, Wrench } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Users2, ChevronDown, Wrench, Settings as SettingsIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 interface NavLinkProps {
@@ -93,6 +93,14 @@ export default function Layout({ children }: { children: ReactNode }) {
             icon={<Wrench size={18} strokeWidth={2} />}
             active={pathname.startsWith('/work-orders')}
           />
+          {isRole('admin') && (
+            <NavLink
+              to="/settings"
+              label="Settings"
+              icon={<SettingsIcon size={18} strokeWidth={2} />}
+              active={pathname === '/settings'}
+            />
+          )}
         </nav>
 
         {/* Solo logout */}
@@ -223,6 +231,15 @@ export default function Layout({ children }: { children: ReactNode }) {
                   active={pathname.startsWith('/work-orders')}
                   onClick={closeSidebar}
                 />
+                {isRole('admin') && (
+                  <NavLink
+                    to="/settings"
+                    label="Settings"
+                    icon={<SettingsIcon size={18} strokeWidth={2} />}
+                    active={pathname === '/settings'}
+                    onClick={closeSidebar}
+                  />
+                )}
               </nav>
 
               {/* Logout */}

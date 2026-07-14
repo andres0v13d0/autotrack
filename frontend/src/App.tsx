@@ -11,6 +11,7 @@ import CustomerVehicles from './pages/CustomerVehicles';
 import VehicleWorkOrders from './pages/VehicleWorkOrders';
 import WorkOrderDetail from './pages/WorkOrderDetail';
 import WorkOrders from './pages/WorkOrders';
+import Settings from './pages/Settings';
 
 const queryClient = new QueryClient();
 
@@ -29,6 +30,7 @@ export default function App() {
             <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
             <Route path="/vehicles/:vehicleId/work-orders" element={<ProtectedRoute><VehicleWorkOrders /></ProtectedRoute>} />
             <Route path="/vehicles/:vehicleId/work-orders/:workOrderId" element={<ProtectedRoute><WorkOrderDetail /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin']}><Settings /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

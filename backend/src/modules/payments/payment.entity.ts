@@ -8,7 +8,7 @@ import {
 import { WorkOrder } from '../work-orders/work-order.entity';
 import { User } from '../users/user.entity';
 
-export type PaymentMethod = 'cash' | 'card' | 'check' | 'other';
+export type PaymentMethod = 'cash' | 'card' | 'zelle' | 'check' | 'other';
 
 @Entity('payments')
 export class Payment {
@@ -24,7 +24,7 @@ export class Payment {
   @Column('decimal', { precision: 10, scale: 2 })
   amount: number;
 
-  @Column('enum', { enum: ['cash', 'card', 'check', 'other'] })
+  @Column('enum', { enum: ['cash', 'card', 'zelle', 'check', 'other'] })
   method: PaymentMethod;
 
   @Column('date')

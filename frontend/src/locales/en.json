@@ -73,7 +73,33 @@
   "workOrders": {
     "title": "Work Orders",
     "new": "New Order",
-    "description": "Description"
+    "description": "Description",
+    "generatePdf": "Download PDF",
+    "items": "Items",
+    "itemsCount": "items",
+    "noItems": "No items added yet",
+    "addItem": "Add Item",
+    "type": "Type",
+    "itemType": {
+      "part": "Part",
+      "labor": "Labor"
+    },
+    "itemName": "Item Name",
+    "price": "Price",
+    "qty": "Quantity",
+    "lineTotal": "Line Total",
+    "summary": "Summary",
+    "subtotal": "Subtotal",
+    "tax": "Tax",
+    "total": "Total",
+    "amountPaid": "Amount Paid",
+    "balanceDue": "Balance Due",
+    "recordPayment": "Record Payment",
+    "addPayment": "+ Add",
+    "paymentAmount": "Amount",
+    "paymentMethod": "Payment Method",
+    "paymentDate": "Date",
+    "pdfComingSoon": "PDF downloaded successfully"
   },
   "common": {
     "language": "Language",
