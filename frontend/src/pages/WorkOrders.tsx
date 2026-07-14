@@ -428,70 +428,71 @@ export default function WorkOrders() {
                         </td>
                       </tr>
                     ))}
+
+                    {/* Add Item Row */}
+                    {!showItemForm && (
+                      <tr className="bg-white hover:bg-gray-50 transition-colors">
+                        <td colSpan={6} className="px-4 py-3 text-right">
+                          <a
+                            href="#"
+                            onClick={(e) => {
+                              e.preventDefault();
+                              setShowItemForm(true);
+                              setTimeout(() => itemNameInputRef.current?.focus(), 0);
+                            }}
+                            className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                          >
+                            + Add Item
+                          </a>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Add Item Input Row */}
+                    {showItemForm && (
+                      <tr className="bg-blue-50 border-t-2 border-blue-200">
+                        <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))} className="contents">
+                          <td className="px-4 py-3">
+                            <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs w-full`}>
+                              <option value="part">{t('workOrders.itemType.part')}</option>
+                              <option value="labor">{t('workOrders.itemType.labor')}</option>
+                            </select>
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              ref={itemNameInputRef}
+                              {...registerItem('name')} 
+                              className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
+                              placeholder="Item name" 
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs w-full text-right`} placeholder="0.00" />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs w-full text-center`} placeholder="1" />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-xs font-medium text-gray-400">$0.00</div>
+                          </td>
+                          <td className="px-4 py-3 text-right flex items-center justify-end gap-2">
+                            <button 
+                              type="button"
+                              onClick={() => setShowItemForm(false)}
+                              className="text-gray-400 hover:text-gray-600 transition-colors cursor-pointer"
+                            >
+                              <X size={16} />
+                            </button>
+                            <button type="submit" disabled={addItemMutation.isPending} className="text-blue-600 hover:text-blue-800 font-semibold text-xs cursor-pointer transition-colors">
+                              {addItemMutation.isPending ? '...' : '+ Add'}
+                            </button>
+                          </td>
+                        </form>
+                      </tr>
+                    )}
                   </tbody>
                 </table>
               </div>
-              
-              {/* Add Item Link Below Table */}
-              <div className="mt-3 text-right">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    setShowItemForm(true);
-                    setTimeout(() => itemNameInputRef.current?.focus(), 0);
-                  }}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
-                >
-                  + Add Item
-                </a>
-              </div>
-
-              {/* Add Item Form Below */}
-              {showItemForm && (
-                <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))} className="mt-4 bg-blue-50 border border-blue-200 rounded-lg p-4 space-y-4">
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-2">Type</label>
-                      <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs w-full`}>
-                        <option value="part">{t('workOrders.itemType.part')}</option>
-                        <option value="labor">{t('workOrders.itemType.labor')}</option>
-                      </select>
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-2">Item Name</label>
-                      <input 
-                        ref={itemNameInputRef}
-                        {...registerItem('name')} 
-                        className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
-                        placeholder="e.g., Brake pads, Oil change" 
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-2">Price</label>
-                      <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs w-full`} placeholder="0.00" />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-gray-600 mb-2">Quantity</label>
-                      <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs w-full`} placeholder="1" />
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-2 pt-2">
-                    <button 
-                      type="button"
-                      onClick={() => setShowItemForm(false)}
-                      className="px-4 py-2 rounded-lg border border-gray-300 text-gray-600 text-xs font-bold hover:bg-gray-100 cursor-pointer transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button type="submit" disabled={addItemMutation.isPending} className="px-4 py-2 rounded-lg text-white text-xs font-bold hover:opacity-90 disabled:opacity-60 cursor-pointer" style={{ backgroundColor: '#f97316' }}>
-                      {addItemMutation.isPending ? '...' : '+ Add Item'}
-                    </button>
-                  </div>
-                </form>
-              )}
             </div>
 
             {/* Totals Section */}
