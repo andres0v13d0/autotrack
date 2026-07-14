@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Delete,
+  Patch,
   Body,
   Param,
   UseGuards,
@@ -67,6 +68,12 @@ export class WorkOrdersController {
   @Roles('admin', 'front_desk', 'technician')
   removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
     return this.workOrdersService.removeItem(workOrderId, itemId);
+  }
+
+  @Patch(':id')
+  @Roles('admin', 'front_desk', 'technician')
+  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }) {
+    return this.workOrdersService.update(id, dto);
   }
 
   @Get(':id/pdf-data')

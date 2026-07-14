@@ -60,4 +60,8 @@ export const workOrdersService = {
   /** DELETE /work-orders/:id/items/:itemId */
   removeItem: (workOrderId: string, itemId: string): Promise<WorkOrder> =>
     api.delete(`/work-orders/${workOrderId}/items/${itemId}`).then((res) => res.data),
+
+  /** PATCH /work-orders/:id */
+  update: (workOrderId: string, data: { tax_rate?: number; delivery_status?: string }): Promise<WorkOrder> =>
+    api.patch(`/work-orders/${workOrderId}`, data).then((res) => res.data),
 };

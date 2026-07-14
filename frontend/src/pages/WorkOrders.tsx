@@ -93,6 +93,12 @@ export default function WorkOrders() {
     }
 
     try {
+      // Guardar tax rate si cambió
+      if (taxRate && taxRate !== '0') {
+        console.log('Updating tax rate:', parseFloat(taxRate) / 100);
+        await workOrdersService.update(selectedWorkOrderId, { tax_rate: parseFloat(taxRate) / 100 });
+      }
+
       // Guardar el pago si hay monto
       if (amountToPay) {
         const paymentAmount = parseFloat(amountToPay);

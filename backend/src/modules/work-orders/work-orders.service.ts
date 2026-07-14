@@ -142,6 +142,38 @@ export class WorkOrdersService {
     return this.recalculateOrder(workOrderId);
   }
 
+  async update(id: string, dto: { tax_rate?: number; delivery_status?: string }): Promise<WorkOrder> {
+    const order = await this.findOne(id);
+
+    if (dto.tax_rate !== undefined) {
+      order.tax_rate = dto.tax_rate;
+      // Recalculate tax and total with new tax rate
+      return this.recalculateOrder(id);
+    }
+
+    if (dto.delivery_status !== undefined) {
+      order.delivery_status = dto.delivery_status as any;
+    }
+
+    await this.workOrdersRepo.save(order);
+
+    const reloaded = await this.workOrdersRepo.findOne({
+      where: { id },
+      relations: {
+        items: true,
+        vehicle: {
+          customer: true,
+        },
+      },
+    });
+
+    if (!reloaded) {
+      throw new NotFoundException(`Work order ${id} not found after update`);
+    }
+
+    return reloaded;
+  }
+
   private async recalculateOrder(workOrderId: string): Promise<WorkOrder> {
     console.log('🔄 Recalculating order:', workOrderId);
     

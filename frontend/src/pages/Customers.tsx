@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -7,6 +7,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, MoreVertical, Phone, MapPin, Truck, AlertCircle, User, CreditCard, Wrench } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { createPortal } from 'react-dom';
 import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import Modal from '../components/ui/Modal';
@@ -44,6 +45,8 @@ export default function Customers() {
   const [customerWorkOrders, setCustomerWorkOrders] = useState<any[]>([]);
   const [customerBalance, setCustomerBalance] = useState({ total: 0, paid: 0, debt: 0 });
   const [loadingDetail, setLoadingDetail] = useState(false);
+  const [dropdownPos, setDropdownPos] = useState({ top: 0, left: 0 });
+  const dropdownRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const customerForm = useForm({ resolver: zodResolver(customerSchema) });
   const paymentForm = useForm({ resolver: zodResolver(paymentSchema) });
@@ -167,7 +170,7 @@ export default function Customers() {
             <div 
               key={customer.id} 
               onClick={() => { setSelectedCustomer(customer); loadCustomerDetail(customer); setShowDetailModal(true); }} 
-              className="group relative rounded-xl p-5 hover:shadow-xl transition-all duration-300 cursor-pointer overflow-hidden"
+              className="group relative rounded-xl p-5 hover:shadow-xl transition-all duration-300 cursor-pointer"
               style={{ backgroundColor: '#0f1f3d' }}
             >
               {/* Header */}
@@ -179,10 +182,18 @@ export default function Customers() {
                     <span className="font-medium">{customer.phone}</span>
                   </div>
                 </div>
-                <div className="relative" onClick={(e) => e.stopPropagation()} data-dropdown>
+                <div onClick={(e) => e.stopPropagation()} data-dropdown>
                   <button 
+                    ref={(el) => { dropdownRefs.current[customer.id] = el; }}
                     onClick={(e) => { 
-                      e.stopPropagation(); 
+                      e.stopPropagation();
+                      if (activeDropdown !== customer.id) {
+                        const btn = dropdownRefs.current[customer.id];
+                        if (btn) {
+                          const rect = btn.getBoundingClientRect();
+                          setDropdownPos({ top: rect.bottom + 8, left: rect.left - 140 });
+                        }
+                      }
                       setActiveDropdown(activeDropdown === customer.id ? null : customer.id); 
                       setSelectedCustomer(customer); 
                     }} 
@@ -190,15 +201,8 @@ export default function Customers() {
                   >
                     <MoreVertical size={20} style={{ color: '#f97316' }} />
                   </button>
-                  {activeDropdown === customer.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-30 overflow-hidden" onClick={(e) => e.stopPropagation()}>
-                      <button onClick={(e) => { e.stopPropagation(); navigate('/work-orders/new', { state: { customer_id: customer.id } }); setShowDetailModal(false); setActiveDropdown(null); }} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Create Work Order</button>
-                      <button onClick={(e) => { e.stopPropagation(); paymentForm.reset({ amount: 0, method: 'cash', date: new Date().toISOString().split('T')[0] }); setShowPaymentModal(true); setActiveDropdown(null); }} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Register Payment</button>
-                      <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(customer); customerForm.reset({ name: customer.name, phone: customer.phone }); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Edit</button>
-                      <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(customer); setActiveDropdown(null); }} className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer">Delete</button>
-                    </div>
-                  )}
                 </div>
+              
               </div>
 
               {/* Vehicles Badge */}
@@ -407,6 +411,16 @@ export default function Customers() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {activeDropdown && createPortal(
+        <div className="fixed bg-white rounded-xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`, pointerEvents: 'auto', zIndex: 99999 }}>
+          <button onClick={(e) => { e.stopPropagation(); navigate('/work-orders/new', { state: { customer_id: selectedCustomer?.id } }); setShowDetailModal(false); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Create Work Order</button>
+          <button onClick={(e) => { e.stopPropagation(); paymentForm.reset({ amount: 0, method: 'cash', date: new Date().toISOString().split('T')[0] }); setShowPaymentModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Register Payment</button>
+          <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(selectedCustomer); if (selectedCustomer) customerForm.reset({ name: selectedCustomer.name, phone: selectedCustomer.phone }); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Edit</button>
+          <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(selectedCustomer); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">Delete</button>
+        </div>,
+        document.body
       )}
     </Layout>
   );
