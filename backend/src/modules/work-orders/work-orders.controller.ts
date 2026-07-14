@@ -7,6 +7,7 @@ import {
   Param,
   UseGuards,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { WorkOrdersService } from './work-orders.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
@@ -26,8 +27,16 @@ export class WorkOrdersController {
 
   @Post()
   @Roles('admin', 'front_desk')
-  create(@Body() dto: CreateWorkOrderDto, @Request() req) {
-    return this.workOrdersService.create(dto, req.user.id);
+  async create(@Body() dto: CreateWorkOrderDto, @Request() req) {
+    if (!dto.vehicle_id || !dto.description_needed) {
+      throw new BadRequestException('vehicle_id and description_needed are required');
+    }
+    try {
+      return await this.workOrdersService.create(dto, req.user.id);
+    } catch (error) {
+      console.error('Error creating work order:', error);
+      throw error;
+    }
   }
 
   @Get()

@@ -21,9 +21,11 @@ export class WorkOrdersService {
     const taxRate = this.configService.get<number>('TAX_RATE', 0.0875);
 
     // Generate order_number: find the max and increment
-    const lastOrder = await this.workOrdersRepo.findOne({
-      order: { order_number: 'DESC' },
-    });
+    const lastOrder = await this.workOrdersRepo
+      .createQueryBuilder('wo')
+      .orderBy('wo.order_number', 'DESC')
+      .limit(1)
+      .getOne();
     
     const orderNumber = (lastOrder?.order_number || 1000) + 1;
 
@@ -104,7 +106,7 @@ export class WorkOrdersService {
   }
 
   async addItem(workOrderId: string, dto: AddItemDto): Promise<WorkOrder> {
-    await this.findOne(workOrderId);
+    const order = await this.findOne(workOrderId);
 
     const item = this.itemsRepo.create({
       work_order_id: workOrderId,
@@ -116,6 +118,12 @@ export class WorkOrdersService {
 
     const savedItem = await this.itemsRepo.save(item);
     console.log('✅ Item saved:', savedItem);
+    
+    // Verify the item was saved with correct work_order_id
+    const verifyItem = await this.itemsRepo.findOne({
+      where: { id: savedItem.id }
+    });
+    console.log('🔍 Verified item:', verifyItem);
 
     // Recalculate order totals
     return this.recalculateOrder(workOrderId);

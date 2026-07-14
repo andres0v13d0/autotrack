@@ -15,11 +15,12 @@ export class WorkOrderItem {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
+  @Column('uuid', { nullable: true })
+  work_order_id: string;
+
   @ManyToOne(() => WorkOrder, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'work_order_id' })
   work_order: WorkOrder;
-
-  work_order_id: string;  // FK creada automáticamente por @ManyToOne/@JoinColumn
 
   @Column('enum', { enum: ['part', 'labor'] })
   type: WorkOrderItemType;

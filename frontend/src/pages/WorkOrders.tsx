@@ -402,35 +402,46 @@ export default function WorkOrders() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
-                    {/* Existing Items with Delete Link Below */}
+                    {/* Existing Items - Editable Rows */}
                     {selectedOrder.items.map((item, idx) => (
-                      <tbody key={item.id}>
-                        <tr className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-4 py-3">
-                            <span className={`text-xs font-bold px-2 py-1 rounded-full ${item.type === 'part' ? 'bg-blue-100 text-blue-800' : 'bg-purple-100 text-purple-800'}`}>
-                              {t(`workOrders.itemType.${item.type}`)}
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 text-xs font-medium text-gray-900">{item.name}</td>
-                          <td className="px-4 py-3 text-right text-xs font-medium text-gray-900">${typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2)}</td>
-                          <td className="px-4 py-3 text-center text-xs font-medium text-gray-900">{item.qty}</td>
-                          <td className="px-4 py-3 text-right text-xs font-bold text-gray-900">${((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.qty).toFixed(2)}</td>
-                        </tr>
-                        <tr className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td colSpan={5} className="px-4 py-2">
-                            <a
-                              href="#"
-                              onClick={(e) => {
-                                e.preventDefault();
-                                removeItemMutation.mutate(item.id);
-                              }}
-                              className="text-xs font-semibold text-red-600 hover:text-red-800 transition-colors cursor-pointer"
-                            >
-                              Delete
-                            </a>
-                          </td>
-                        </tr>
-                      </tbody>
+                      <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                        <td className="px-4 py-3">
+                          <select className="text-xs w-full px-2 py-1 border border-gray-300 rounded bg-white cursor-not-allowed opacity-75" disabled>
+                            <option value={item.type}>{t(`workOrders.itemType.${item.type}`)}</option>
+                          </select>
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="text"
+                            value={item.name}
+                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed opacity-75"
+                            disabled
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="number"
+                            step="0.01"
+                            value={typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2)}
+                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-75"
+                            disabled
+                          />
+                        </td>
+                        <td className="px-4 py-3">
+                          <input 
+                            type="number"
+                            min="1"
+                            value={item.qty}
+                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-center bg-gray-100 cursor-not-allowed opacity-75"
+                            disabled
+                          />
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <div className="text-xs font-bold text-gray-900">
+                            ${((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.qty).toFixed(2)}
+                          </div>
+                        </td>
+                      </tr>
                     ))}
 
                     {/* New Item Input Row - Always Visible */}
@@ -458,23 +469,43 @@ export default function WorkOrders() {
                         <div className="text-xs font-medium text-gray-400">$0.00</div>
                       </td>
                     </tr>
+
+                    {/* Actions Row - Delete buttons below existing items */}
+                    {selectedOrder.items.length > 0 && (
+                      <tr className="bg-gray-50 border-t-2 border-gray-200">
+                        <td colSpan={5} className="px-4 py-2">
+                          <div className="flex gap-2">
+                            {selectedOrder.items.map((item) => (
+                              <button
+                                key={item.id}
+                                onClick={() => removeItemMutation.mutate(item.id)}
+                                className="text-xs font-semibold px-3 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors cursor-pointer"
+                              >
+                                Delete {item.name}
+                              </button>
+                            ))}
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+
+                    {/* Add Button Row */}
+                    <tr className="bg-blue-50 border-t-2 border-blue-200">
+                      <td colSpan={5} className="px-4 py-2">
+                        <button
+                          onClick={(e) => {
+                            e.preventDefault();
+                            handleItemSubmit((v) => addItemMutation.mutate(v))();
+                            itemNameInputRef.current?.focus();
+                          }}
+                          className="text-xs font-semibold px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer"
+                        >
+                          + Add Item
+                        </button>
+                      </td>
+                    </tr>
                   </tbody>
                 </table>
-              </div>
-
-              {/* Add Link Below Table */}
-              <div className="mt-2 text-right">
-                <a
-                  href="#"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    handleItemSubmit((v) => addItemMutation.mutate(v))();
-                    itemNameInputRef.current?.focus();
-                  }}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer inline-block"
-                >
-                  + Add
-                </a>
               </div>
 
               {/* Hidden form for item submission */}

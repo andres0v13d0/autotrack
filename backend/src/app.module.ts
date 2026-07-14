@@ -49,7 +49,7 @@ import { Setting } from './modules/settings/setting.entity';
           database: config.get<string>('DATABASE_NAME', 'shop_management'),
           entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment, Setting],
           synchronize: true,
-          logging: true,
+          logging: ['error', 'warn'],
         };
       },
       inject: [ConfigService],
