@@ -15,6 +15,21 @@ interface WorkOrderPDFProps {
   };
 }
 
+// Formatear teléfono en formato US: (XXX) XXX-XXXX
+const formatPhoneUS = (phone: string): string => {
+  // Remover caracteres no numéricos
+  const cleaned = phone.replace(/\D/g, '');
+  
+  // Tomar últimos 10 dígitos
+  const last10 = cleaned.slice(-10);
+  
+  if (last10.length === 10) {
+    return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
+  }
+  
+  return phone;
+};
+
 const colors = {
   primary: '#0f1f3d',
   secondary: '#f97316',
@@ -28,134 +43,135 @@ const colors = {
 
 const styles = StyleSheet.create({
   page: {
-    padding: 50,
+    padding: 20,
     backgroundColor: '#ffffff',
     fontFamily: 'Helvetica',
   },
   header: {
-    marginBottom: 30,
-    paddingBottom: 20,
-    borderBottomWidth: 3,
-    borderBottomColor: colors.secondary,
-  },
-  headerContent: {
+    marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
+    gap: 15,
   },
-  shopInfo: {
-    flex: 1,
+  logoBox: {
+    alignItems: 'center',
+    minWidth: 40,
   },
   logo: {
     width: 60,
     height: 60,
-    marginBottom: 12,
-    borderRadius: 6,
+    borderRadius: 4,
+  },
+  shopInfoBox: {
+    flex: 1,
+    flexDirection: 'column',
   },
   shopName: {
-    fontSize: 28,
+    fontSize: 11,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 4,
+    marginBottom: 3,
   },
   shopSlogan: {
-    fontSize: 11,
+    fontSize: 7,
     color: colors.secondary,
     fontStyle: 'italic',
-    marginBottom: 8,
-  },
-  shopAddress: {
-    fontSize: 10,
-    color: colors.lightText,
     marginBottom: 4,
-    lineHeight: 1.4,
+    fontWeight: '500',
   },
-  shopPhone: {
-    fontSize: 10,
-    color: colors.lightText,
-    marginBottom: 4,
+  infoRow: {
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 7,
+    color: colors.text,
+    fontWeight: '500',
+    marginTop: 0,
   },
   orderNumberBadge: {
     backgroundColor: colors.secondary,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
     textAlign: 'center',
+    minWidth: 80,
   },
   orderNumber: {
-    fontSize: 24,
+    fontSize: 14,
     fontWeight: 'bold',
     color: '#ffffff',
   },
   orderNumberLabel: {
-    fontSize: 9,
+    fontSize: 7,
     color: '#ffffff',
-    marginTop: 4,
+    marginTop: 2,
+    letterSpacing: 0.5,
   },
   title: {
-    fontSize: 16,
+    fontSize: 11,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: 15,
   },
   sectionGrid: {
     flexDirection: 'row',
-    gap: 20,
-    marginBottom: 25,
+    gap: 15,
+    marginBottom: 15,
   },
   gridCol: {
     flex: 1,
   },
   gridColLabel: {
-    fontSize: 10,
+    fontSize: 7,
     fontWeight: 'bold',
     color: colors.primary,
     textTransform: 'uppercase',
-    marginBottom: 8,
-    letterSpacing: 1,
+    marginBottom: 3,
+    letterSpacing: 0.5,
   },
   gridColValue: {
-    fontSize: 11,
+    fontSize: 9,
     color: colors.text,
-    lineHeight: 1.5,
+    lineHeight: 1.4,
   },
   vehicleInfo: {
     backgroundColor: colors.lightBg,
-    padding: 15,
-    borderRadius: 6,
-    marginBottom: 20,
+    padding: 10,
+    borderRadius: 4,
+    marginBottom: 12,
   },
   vehicleItem: {
     flexDirection: 'row',
-    marginBottom: 8,
+    marginBottom: 4,
   },
   vehicleLabel: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 'bold',
     color: colors.primary,
-    width: 70,
+    width: 50,
   },
   vehicleValue: {
-    fontSize: 10,
+    fontSize: 8,
     color: colors.text,
   },
   table: {
     width: '100%',
-    marginBottom: 20,
+    marginBottom: 15,
   },
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: colors.primary,
-    borderRadius: 6,
-    paddingHorizontal: 12,
-    paddingVertical: 12,
+    borderRadius: 3,
+    paddingHorizontal: 8,
+    paddingVertical: 8,
     marginBottom: 1,
   },
   tableHeaderCell: {
-    fontSize: 10,
+    fontSize: 8,
     fontWeight: 'bold',
     color: '#ffffff',
     flex: 1,
@@ -168,8 +184,8 @@ const styles = StyleSheet.create({
   },
   tableRow: {
     flexDirection: 'row',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    paddingHorizontal: 8,
+    paddingVertical: 7,
     borderBottomWidth: 1,
     borderBottomColor: colors.border,
   },
@@ -177,7 +193,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.lightBg,
   },
   tableCell: {
-    fontSize: 9,
+    fontSize: 8,
     color: colors.text,
     flex: 1,
   },
@@ -190,71 +206,71 @@ const styles = StyleSheet.create({
   },
   summarySection: {
     backgroundColor: colors.lightBg,
-    padding: 20,
-    borderRadius: 6,
-    marginTop: 20,
-    marginBottom: 20,
+    padding: 12,
+    borderRadius: 4,
+    marginTop: 12,
+    marginBottom: 12,
   },
   summaryRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: 10,
+    marginBottom: 6,
   },
   summaryLabel: {
-    fontSize: 10,
+    fontSize: 8,
     color: colors.lightText,
     fontWeight: '500',
   },
   summaryValue: {
-    fontSize: 10,
+    fontSize: 8,
     color: colors.text,
     fontWeight: '600',
   },
   totalRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    paddingTop: 12,
-    marginTop: 12,
+    paddingTop: 8,
+    marginTop: 8,
     borderTopWidth: 2,
     borderTopColor: colors.secondary,
   },
   totalLabel: {
-    fontSize: 12,
+    fontSize: 10,
     fontWeight: 'bold',
     color: colors.primary,
   },
   totalValue: {
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: 'bold',
     color: colors.secondary,
   },
   footer: {
-    marginTop: 30,
-    paddingTop: 20,
+    marginTop: 15,
+    paddingTop: 10,
     borderTopWidth: 1,
     borderTopColor: colors.border,
     textAlign: 'center',
-    fontSize: 8,
+    fontSize: 7,
     color: colors.lightText,
   },
   descriptionBox: {
     backgroundColor: colors.lightBg,
-    padding: 12,
-    borderRadius: 6,
-    borderLeftWidth: 3,
+    padding: 10,
+    borderRadius: 4,
+    borderLeftWidth: 2,
     borderLeftColor: colors.accent,
-    marginBottom: 20,
+    marginBottom: 12,
   },
   descriptionLabel: {
-    fontSize: 9,
+    fontSize: 8,
     fontWeight: 'bold',
     color: colors.primary,
-    marginBottom: 6,
+    marginBottom: 4,
   },
   descriptionText: {
-    fontSize: 9,
+    fontSize: 8,
     color: colors.text,
-    lineHeight: 1.5,
+    lineHeight: 1.4,
   },
 });
 
@@ -269,34 +285,54 @@ const WorkOrderPDFDocument: React.FC<WorkOrderPDFProps> = ({ workOrder, settings
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerContent}>
-            <View style={styles.shopInfo}>
-              {settings.shop_logo_url && (
-                <Image
-                  src={settings.shop_logo_url}
-                  style={styles.logo}
-                />
-              )}
-              <Text style={styles.shopName}>{settings.shop_name || 'AutoTrack Shop'}</Text>
-              {settings.shop_slogan && (
-                <Text style={styles.shopSlogan}>{settings.shop_slogan}</Text>
-              )}
-              {settings.shop_address && (
-                <Text style={styles.shopAddress}>{settings.shop_address}</Text>
-              )}
-              {settings.shop_phone && (
-                <Text style={styles.shopPhone}>{settings.shop_phone}</Text>
-              )}
-              {settings.shop_email && (
-                <Text style={styles.shopPhone}>{settings.shop_email}</Text>
-              )}
-            </View>
-            <View style={styles.orderNumberBadge}>
-              <Text style={styles.orderNumber}>
-                #{workOrder.order_number || workOrder.id.slice(0, 8)}
-              </Text>
-              <Text style={styles.orderNumberLabel}>WORK ORDER</Text>
-            </View>
+          {/* Logo Box - Left */}
+          <View style={styles.logoBox}>
+            {settings.shop_logo_url ? (
+              <Image
+                src={settings.shop_logo_url}
+                style={styles.logo}
+              />
+            ) : (
+              <View style={{ ...styles.logo, backgroundColor: colors.lightBg, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, color: colors.lightText }}>□</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Info Box - Center */}
+          <View style={styles.shopInfoBox}>
+            <Text style={styles.shopName}>{settings.shop_name || 'AutoTrack Shop'}</Text>
+            {settings.shop_slogan && (
+              <Text style={styles.shopSlogan}>{settings.shop_slogan}</Text>
+            )}
+            
+            {settings.shop_address && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>{settings.shop_address}</Text>
+              </View>
+            )}
+            
+            {settings.shop_phone && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>
+                  {formatPhoneUS(settings.shop_phone)}
+                </Text>
+              </View>
+            )}
+            
+            {settings.shop_email && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>{settings.shop_email}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Right: Order Number Badge */}
+          <View style={styles.orderNumberBadge}>
+            <Text style={styles.orderNumber}>
+              #{workOrder.order_number || workOrder.id.slice(0, 8)}
+            </Text>
+            <Text style={styles.orderNumberLabel}>WORK ORDER</Text>
           </View>
         </View>
 
