@@ -110,7 +110,6 @@ export class WorkOrdersService {
 
     const item = this.itemsRepo.create({
       work_order_id: workOrderId,
-      type: dto.type,
       name: dto.name,
       price: dto.price,
       qty: dto.qty,

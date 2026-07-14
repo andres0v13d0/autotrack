@@ -8,7 +8,7 @@ import Field, { inputCls } from '../components/ui/Field';
 import { workOrdersService } from '../services/workOrders.service';
 import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
-import type { WorkOrderItemType, PaymentMethod } from '../types/workOrder';
+import type { PaymentMethod } from '../types/workOrder';
 
 const MOCK_VEHICLES: Record<string, { plate: string; model: string; customerId: string; customerName: string }> = {
   v1: { plate: 'ABC-1234', model: '2018 Toyota Camry', customerId: 'c1', customerName: 'John Doe' },
@@ -17,7 +17,6 @@ const MOCK_VEHICLES: Record<string, { plate: string; model: string; customerId: 
 };
 
 interface ItemForm {
-  type: WorkOrderItemType;
   name: string;
   price: string;
   qty: string;
@@ -38,7 +37,7 @@ export default function WorkOrderDetail() {
   const [showPaymentForm, setShowPaymentForm] = useState(false);
 
   const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
-    defaultValues: { type: 'part', qty: '1' },
+    defaultValues: { qty: '1' },
   });
 
   const { register: registerPayment, handleSubmit: handlePaymentSubmit, reset: resetPayment, formState: { errors: paymentErrors } } = useForm<PaymentForm>({
@@ -68,12 +67,11 @@ export default function WorkOrderDetail() {
   const addItemMutation = useMutation({
     mutationFn: (values: ItemForm) =>
       workOrdersService.addItem(workOrderId, {
-        type: values.type,
         name: values.name,
         price: parseFloat(values.price),
         qty: parseInt(values.qty, 10),
       }),
-    onSuccess: () => { invalidate(); resetItem({ type: 'part', name: '', price: '', qty: '1' }); },
+    onSuccess: () => { invalidate(); resetItem({ name: '', price: '', qty: '1' }); },
   });
 
   const removeItemMutation = useMutation({
@@ -177,8 +175,7 @@ export default function WorkOrderDetail() {
               <table className="w-full text-sm">
                 <thead>
                   <tr className="bg-gray-50">
-                    <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.type')}</th>
-                    <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.itemName')}</th>
+                    <th className="text-left px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.description')}</th>
                     <th className="text-right px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.price')}</th>
                     <th className="text-right px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.qty')}</th>
                     <th className="text-right px-5 py-3 text-xs font-medium text-gray-500">{t('workOrders.lineTotal')}</th>
@@ -188,15 +185,6 @@ export default function WorkOrderDetail() {
                 <tbody>
                   {order.items.map((item) => (
                     <tr key={item.id} className="border-t border-gray-100 hover:bg-gray-50">
-                      <td className="px-5 py-3">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${
-                          item.type === 'part'
-                            ? 'bg-blue-100 text-blue-700'
-                            : 'bg-purple-100 text-purple-700'
-                        }`}>
-                          {t(`workOrders.itemType.${item.type}`)}
-                        </span>
-                      </td>
                       <td className="px-5 py-3 text-gray-700">{item.name}</td>
                       <td className="px-5 py-3 text-right text-gray-600">${item.price.toFixed(2)}</td>
                       <td className="px-5 py-3 text-right text-gray-600">{item.qty}</td>
@@ -223,14 +211,8 @@ export default function WorkOrderDetail() {
           <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
             <h2 className="font-semibold text-sm mb-4" style={{ color: '#0f1f3d' }}>{t('workOrders.addItem')}</h2>
             <form onSubmit={handleItemSubmit((v) => addItemMutation.mutate(v))}
-              className="grid grid-cols-2 sm:grid-cols-4 gap-3 items-end">
-              <Field label={t('workOrders.type')} error={itemErrors.type?.message}>
-                <select {...registerItem('type', { required: true })} className={inputCls(!!itemErrors.type)}>
-                  <option value="part">{t('workOrders.itemType.part')}</option>
-                  <option value="labor">{t('workOrders.itemType.labor')}</option>
-                </select>
-              </Field>
-              <Field label={t('workOrders.itemName')} error={itemErrors.name?.message}>
+              className="grid grid-cols-2 sm:grid-cols-3 gap-3 items-end">
+              <Field label={t('workOrders.description')} error={itemErrors.name?.message}>
                 <input {...registerItem('name', { required: true })}
                   className={inputCls(!!itemErrors.name)} placeholder="Brake pads" />
               </Field>

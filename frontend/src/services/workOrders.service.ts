@@ -53,7 +53,7 @@ export const workOrdersService = {
   /** POST /work-orders/:id/items */
   addItem: (
     workOrderId: string,
-    item: { type: WorkOrderItemType; name: string; price: number; qty: number },
+    item: { name: string; price: number; qty: number },
   ): Promise<WorkOrder> =>
     api.post(`/work-orders/${workOrderId}/items`, item).then((res) => res.data),
 

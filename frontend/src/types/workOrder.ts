@@ -22,7 +22,6 @@ export interface Customer {
 
 export interface WorkOrderItem {
   id: string;
-  type: WorkOrderItemType;
   name: string;
   price: number;
   qty: number;

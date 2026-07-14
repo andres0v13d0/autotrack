@@ -27,7 +27,6 @@ const createOrderSchema = z.object({
 type CreateOrderValues = z.infer<typeof createOrderSchema>;
 
 interface ItemForm {
-  type: 'part' | 'labor';
   name: string;
   price: string;
   qty: string;
@@ -45,6 +44,7 @@ export default function WorkOrders() {
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'pending' | 'partial' | 'paid' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
+  const [editingItems, setEditingItems] = useState<Record<string, { price: string; qty: string }>>({});
   const itemNameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
@@ -74,8 +74,8 @@ export default function WorkOrders() {
     resolver: zodResolver(createOrderSchema),
   });
 
-  const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
-    defaultValues: { type: 'part', qty: '1' },
+  const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors }, watch: watchItem } = useForm<ItemForm>({
+    defaultValues: { qty: '1' },
   });
 
   const createMutation = useMutation({
@@ -92,14 +92,13 @@ export default function WorkOrders() {
   const addItemMutation = useMutation({
     mutationFn: (values: ItemForm) =>
       selectedWorkOrderId ? workOrdersService.addItem(selectedWorkOrderId, {
-        type: values.type,
         name: values.name,
         price: parseFloat(values.price),
         qty: parseInt(values.qty, 10),
       }) : Promise.reject('No work order selected'),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
-      resetItem({ type: 'part', name: '', price: '', qty: '1' });
+      resetItem({ name: '', price: '', qty: '1' });
     },
   });
 
@@ -394,118 +393,127 @@ export default function WorkOrders() {
                 <table className="w-full text-sm">
                   <thead>
                     <tr style={{ backgroundColor: '#f3f4f6' }}>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.type')}</th>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.itemName')}</th>
+                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.description')}</th>
                       <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
                       <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
                       <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
+                      {selectedOrder.items.length > 0 && (
+                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">Actions</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200">
                     {/* Existing Items - Editable Rows */}
-                    {selectedOrder.items.map((item, idx) => (
-                      <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                        <td className="px-4 py-3">
-                          <select className="text-xs w-full px-2 py-1 border border-gray-300 rounded bg-white cursor-not-allowed opacity-75" disabled>
-                            <option value={item.type}>{t(`workOrders.itemType.${item.type}`)}</option>
-                          </select>
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            type="text"
-                            value={item.name}
-                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded bg-gray-100 cursor-not-allowed opacity-75"
-                            disabled
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            type="number"
-                            step="0.01"
-                            value={typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2)}
-                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-right bg-gray-100 cursor-not-allowed opacity-75"
-                            disabled
-                          />
-                        </td>
-                        <td className="px-4 py-3">
-                          <input 
-                            type="number"
-                            min="1"
-                            value={item.qty}
-                            className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-center bg-gray-100 cursor-not-allowed opacity-75"
-                            disabled
-                          />
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="text-xs font-bold text-gray-900">
-                            ${((typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.qty).toFixed(2)}
-                          </div>
-                        </td>
-                      </tr>
-                    ))}
+                    {selectedOrder.items.map((item, idx) => {
+                      const edited = editingItems[item.id];
+                      const price = edited ? parseFloat(edited.price) : (typeof item.price === 'string' ? parseFloat(item.price) : item.price);
+                      const qty = edited ? parseInt(edited.qty, 10) : item.qty;
+                      const lineTotal = (price * qty).toFixed(2);
+
+                      return (
+                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="text"
+                              value={item.name}
+                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="number"
+                              step="0.01"
+                              value={edited?.price ?? (typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2))}
+                              onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, price: e.target.value } })}
+                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-right"
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              type="number"
+                              min="1"
+                              value={edited?.qty ?? item.qty}
+                              onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, qty: e.target.value } })}
+                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-center"
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-xs font-bold text-gray-900">
+                              ${lineTotal}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              onClick={() => removeItemMutation.mutate(item.id)}
+                              className="text-lg text-red-600 hover:text-red-800 transition-colors cursor-pointer font-bold"
+                            >
+                              ×
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
 
                     {/* New Item Input Row - Always Visible */}
-                    <tr className="bg-blue-50">
-                      <td className="px-4 py-3">
-                        <select {...registerItem('type')} className={`${inputCls(!!itemErrors.type)} text-xs w-full`}>
-                          <option value="part">{t('workOrders.itemType.part')}</option>
-                          <option value="labor">{t('workOrders.itemType.labor')}</option>
-                        </select>
-                      </td>
-                      <td className="px-4 py-3">
-                        <input 
-                          {...registerItem('name')} 
-                          className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
-                          placeholder="Item name" 
-                        />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input {...registerItem('price')} type="number" step="0.01" min="0.01" className={`${inputCls(!!itemErrors.price)} text-xs w-full text-right`} placeholder="0.00" />
-                      </td>
-                      <td className="px-4 py-3">
-                        <input {...registerItem('qty')} type="number" min="1" className={`${inputCls(!!itemErrors.qty)} text-xs w-full text-center`} placeholder="1" />
-                      </td>
-                      <td className="px-4 py-3 text-right">
-                        <div className="text-xs font-medium text-gray-400">$0.00</div>
-                      </td>
-                    </tr>
-
-                    {/* Actions Row - Delete buttons below existing items */}
-                    {selectedOrder.items.length > 0 && (
-                      <tr className="bg-gray-50 border-t-2 border-gray-200">
-                        <td colSpan={5} className="px-4 py-2">
-                          <div className="flex gap-2">
-                            {selectedOrder.items.map((item) => (
-                              <button
-                                key={item.id}
-                                onClick={() => removeItemMutation.mutate(item.id)}
-                                className="text-xs font-semibold px-3 py-1 rounded bg-red-100 text-red-700 hover:bg-red-200 transition-colors cursor-pointer"
-                              >
-                                Delete {item.name}
-                              </button>
-                            ))}
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-
-                    {/* Add Button Row */}
-                    <tr className="bg-blue-50 border-t-2 border-blue-200">
-                      <td colSpan={5} className="px-4 py-2">
-                        <button
-                          onClick={(e) => {
-                            e.preventDefault();
-                            handleItemSubmit((v) => addItemMutation.mutate(v))();
-                            itemNameInputRef.current?.focus();
-                          }}
-                          className="text-xs font-semibold px-3 py-1 rounded bg-blue-100 text-blue-700 hover:bg-blue-200 transition-colors cursor-pointer"
-                        >
-                          + Add Item
-                        </button>
-                      </td>
-                    </tr>
+                    {(() => {
+                      const newPrice = parseFloat(watchItem('price') || '0') || 0;
+                      const newQty = parseInt(watchItem('qty') || '1', 10) || 1;
+                      const newLineTotal = (newPrice * newQty).toFixed(2);
+                      
+                      return (
+                        <tr className="bg-blue-50">
+                          <td className="px-4 py-3">
+                            <input 
+                              {...registerItem('name')} 
+                              className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
+                              placeholder="Description" 
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              {...registerItem('price')} 
+                              type="number" 
+                              step="0.01" 
+                              min="0.01" 
+                              className={`${inputCls(!!itemErrors.price)} text-xs w-full text-right`} 
+                              placeholder="0.00" 
+                            />
+                          </td>
+                          <td className="px-4 py-3">
+                            <input 
+                              {...registerItem('qty')} 
+                              type="number" 
+                              min="1" 
+                              className={`${inputCls(!!itemErrors.qty)} text-xs w-full text-center`} 
+                              placeholder="1" 
+                            />
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="text-xs font-medium text-gray-900">
+                              ${newLineTotal}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3"></td>
+                        </tr>
+                      );
+                    })()}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Add Item Link - Outside Table */}
+              <div className="mt-3 text-right">
+                <a
+                  href="#"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleItemSubmit((v) => addItemMutation.mutate(v))();
+                    itemNameInputRef.current?.focus();
+                  }}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-800 transition-colors cursor-pointer"
+                >
+                  + Add Item
+                </a>
               </div>
 
               {/* Hidden form for item submission */}

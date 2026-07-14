@@ -8,8 +8,6 @@ import {
 } from 'typeorm';
 import { WorkOrder } from './work-order.entity';
 
-export type WorkOrderItemType = 'part' | 'labor';
-
 @Entity('work_order_items')
 export class WorkOrderItem {
   @PrimaryGeneratedColumn('uuid')
@@ -21,9 +19,6 @@ export class WorkOrderItem {
   @ManyToOne(() => WorkOrder, (order) => order.items, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'work_order_id' })
   work_order: WorkOrder;
-
-  @Column('enum', { enum: ['part', 'labor'] })
-  type: WorkOrderItemType;
 
   @Column()
   name: string;
