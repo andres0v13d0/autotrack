@@ -21,6 +21,12 @@ const customerSchema = z.object({
   phone: z.string().regex(/^\(?\d{3}\)?[\s-]?\d{3}[\s-]?\d{4}$/, 'Invalid US phone'),
 });
 
+const vehicleSchema = z.object({
+  plate: z.string().min(1, 'Plate is required'),
+  model: z.string().min(1, 'Model is required'),
+  description: z.string().optional(),
+});
+
 const paymentSchema = z.object({
   amount: z.number().min(0.01),
   method: z.enum(['zelle', 'card', 'cash']),
@@ -49,7 +55,9 @@ export default function Customers() {
   const dropdownRefs = useRef<Record<string, HTMLButtonElement | null>>({});
 
   const customerForm = useForm({ resolver: zodResolver(customerSchema) });
+  const vehicleForm = useForm({ resolver: zodResolver(vehicleSchema) });
   const paymentForm = useForm({ resolver: zodResolver(paymentSchema) });
+  const [vehiclesToAdd, setVehiclesToAdd] = useState<Array<{ plate: string; model: string; description?: string }>>([]);
 
   const { data: customers = [], isLoading } = useQuery({
     queryKey: ['customers'],
@@ -57,12 +65,29 @@ export default function Customers() {
   });
 
   const createCustomerMutation = useMutation({
-    mutationFn: (values: any) => 
-      editingCustomer ? customersService.update(editingCustomer.id, values) : customersService.create(values),
+    mutationFn: async (values: any) => {
+      const customer = await (editingCustomer ? customersService.update(editingCustomer.id, values) : customersService.create(values));
+      
+      // Crear vehículos si hay (solo para nuevos clientes o si se están agregando)
+      if (vehiclesToAdd.length > 0) {
+        for (const vehicle of vehiclesToAdd) {
+          await vehiclesService.create({
+            customer_id: customer.id,
+            plate: vehicle.plate,
+            model: vehicle.model,
+            description: vehicle.description || '',
+          });
+        }
+      }
+      
+      return customer;
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
       setShowCreateModal(false);
       customerForm.reset();
+      vehicleForm.reset();
+      setVehiclesToAdd([]);
       setEditingCustomer(null);
     },
   });
@@ -154,7 +179,7 @@ export default function Customers() {
     <Layout>
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-2xl font-bold" style={{ color: '#0f1f3d' }}>{t('customers.title')}</h1>
-        <button onClick={() => { setEditingCustomer(null); customerForm.reset({ name: '', phone: '' }); setShowCreateModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer inline-flex items-center gap-2" style={{ backgroundColor: '#f97316' }}>
+        <button onClick={() => { setEditingCustomer(null); customerForm.reset({ name: '', phone: '' }); setVehiclesToAdd([]); setShowCreateModal(true); }} className="px-4 py-2 rounded-lg text-sm font-semibold text-white transition-opacity hover:opacity-90 cursor-pointer inline-flex items-center gap-2" style={{ backgroundColor: '#f97316' }}>
           <Plus size={16} />
           {t('customers.new')}
         </button>
@@ -236,17 +261,107 @@ export default function Customers() {
       )}
 
       {showCreateModal && (
-        <Modal title={editingCustomer ? '✏️ Edit Customer' : '➕ New Customer'} onClose={() => setShowCreateModal(false)}>
-          <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(data))} className="space-y-5">
-            <Field label="Full Name" error={customerForm.formState.errors.name?.message}>
-              <input {...customerForm.register('name')} className={`${inputCls(!!customerForm.formState.errors.name)} text-base px-4 py-3 rounded-lg`} placeholder="John Doe" />
-            </Field>
-            <Field label="Phone Number" error={customerForm.formState.errors.phone?.message}>
-              <input {...customerForm.register('phone')} className={`${inputCls(!!customerForm.formState.errors.phone)} text-base px-4 py-3 rounded-lg`} placeholder="(305) 555-1234" />
-            </Field>
-            <div className="flex justify-end gap-3 pt-4">
-              <button type="button" onClick={() => setShowCreateModal(false)} className="px-6 py-2.5 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors font-semibold">Cancel</button>
-              <button type="submit" disabled={createCustomerMutation.isPending} className="px-6 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity" style={{ backgroundColor: '#f97316' }}>{createCustomerMutation.isPending ? 'Saving...' : editingCustomer ? 'Update' : 'Create'}</button>
+        <Modal title={editingCustomer ? '✏️ Edit Customer' : '➕ New Customer'} onClose={() => { setShowCreateModal(false); setVehiclesToAdd([]); }} size="lg">
+          <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(data))} className="space-y-6">
+            {/* Customer Info Section */}
+            <div>
+              <h3 className="text-sm font-bold mb-4" style={{ color: '#0f1f3d' }}>Customer Information</h3>
+              <div className="space-y-4">
+                <Field label="Full Name" error={customerForm.formState.errors.name?.message}>
+                  <input {...customerForm.register('name')} className={`${inputCls(!!customerForm.formState.errors.name)} text-base px-4 py-3 rounded-lg`} placeholder="John Doe" />
+                </Field>
+                <Field label="Phone Number" error={customerForm.formState.errors.phone?.message}>
+                  <input {...customerForm.register('phone')} className={`${inputCls(!!customerForm.formState.errors.phone)} text-base px-4 py-3 rounded-lg`} placeholder="(305) 555-1234" />
+                </Field>
+              </div>
+            </div>
+
+            {/* Vehicles Section */}
+            <div className="border-t-2 border-gray-200 pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <h3 className="text-sm font-bold" style={{ color: '#0f1f3d' }}>
+                    <Truck size={18} className="inline mr-2" style={{ color: '#f97316' }} />
+                    Add Vehicles (Optional)
+                  </h3>
+                  {vehiclesToAdd.length > 0 && (
+                    <span className="px-3 py-1 rounded-full text-xs font-bold text-white animate-pulse" style={{ backgroundColor: '#f97316' }}>
+                      {vehiclesToAdd.length} added
+                    </span>
+                  )}
+                </div>
+
+                {/* Vehicle list */}
+                {vehiclesToAdd.length > 0 && (
+                  <div className="mb-4 space-y-2">
+                    {vehiclesToAdd.map((vehicle, idx) => (
+                      <div key={idx} className="flex items-center justify-between bg-gradient-to-r from-blue-50 to-blue-100 p-3 rounded-lg border-l-4 border-blue-400">
+                        <div className="flex items-center gap-3 flex-1">
+                          <Truck size={16} style={{ color: '#f97316' }} className="flex-shrink-0" />
+                          <div>
+                            <p className="font-semibold text-sm" style={{ color: '#0f1f3d' }}>{vehicle.plate}</p>
+                            <p className="text-xs text-gray-600">{vehicle.model}</p>
+                            {vehicle.description && <p className="text-xs text-gray-500 italic mt-1">{vehicle.description}</p>}
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => setVehiclesToAdd(vehiclesToAdd.filter((_, i) => i !== idx))}
+                          className="text-2xl text-red-500 hover:text-red-700 transition-colors cursor-pointer font-light leading-none"
+                        >
+                          ×
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {/* Add vehicle form */}
+                <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5 space-y-4">
+                  <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">Add a new vehicle</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="License Plate" error={vehicleForm.formState.errors.plate?.message}>
+                      <input
+                        {...vehicleForm.register('plate')}
+                        className={`${inputCls(!!vehicleForm.formState.errors.plate)} text-sm px-3 py-2 rounded-lg`}
+                        placeholder="ABC-1234"
+                      />
+                    </Field>
+                    <Field label="Model" error={vehicleForm.formState.errors.model?.message}>
+                      <input
+                        {...vehicleForm.register('model')}
+                        className={`${inputCls(!!vehicleForm.formState.errors.model)} text-sm px-3 py-2 rounded-lg`}
+                        placeholder="2020 Toyota Camry"
+                      />
+                    </Field>
+                  </div>
+                  <Field label="Description (optional)" error={vehicleForm.formState.errors.description?.message}>
+                    <input
+                      {...vehicleForm.register('description')}
+                      className={inputCls(!!vehicleForm.formState.errors.description)}
+                      placeholder="e.g., Red, has dent on left side"
+                    />
+                  </Field>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      vehicleForm.handleSubmit((data) => {
+                        setVehiclesToAdd([...vehiclesToAdd, data]);
+                        vehicleForm.reset();
+                      })();
+                    }}
+                    className="w-full px-4 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#f97316' }}
+                  >
+                    <Plus size={16} />
+                    Add Vehicle
+                  </button>
+                </div>
+              </div>
+
+            {/* Footer buttons */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button type="button" onClick={() => { setShowCreateModal(false); setVehiclesToAdd([]); }} className="px-6 py-2.5 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors font-semibold">Cancel</button>
+              <button type="submit" disabled={createCustomerMutation.isPending} className="px-6 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity" style={{ backgroundColor: '#f97316' }}>{createCustomerMutation.isPending ? 'Saving...' : editingCustomer ? 'Update' : 'Create Customer'}</button>
             </div>
           </form>
         </Modal>
@@ -417,7 +532,7 @@ export default function Customers() {
         <div className="fixed bg-white rounded-xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`, pointerEvents: 'auto', zIndex: 99999 }}>
           <button onClick={(e) => { e.stopPropagation(); navigate('/work-orders/new', { state: { customer_id: selectedCustomer?.id } }); setShowDetailModal(false); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Create Work Order</button>
           <button onClick={(e) => { e.stopPropagation(); paymentForm.reset({ amount: 0, method: 'cash', date: new Date().toISOString().split('T')[0] }); setShowPaymentModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Register Payment</button>
-          <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(selectedCustomer); if (selectedCustomer) customerForm.reset({ name: selectedCustomer.name, phone: selectedCustomer.phone }); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Edit</button>
+          <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(selectedCustomer); if (selectedCustomer) customerForm.reset({ name: selectedCustomer.name, phone: selectedCustomer.phone }); setVehiclesToAdd([]); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Edit</button>
           <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(selectedCustomer); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">Delete</button>
         </div>,
         document.body
