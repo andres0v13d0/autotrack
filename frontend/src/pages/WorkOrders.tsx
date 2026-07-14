@@ -16,7 +16,7 @@ import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
 import type { Vehicle } from '../types';
-import { Eye, Plus, X, Circle, Clock, CheckCircle2, Check } from 'lucide-react';
+import { Plus, X, Circle, Clock, CheckCircle2, Check } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Field, { inputCls } from '../components/ui/Field';
 
@@ -185,13 +185,25 @@ export default function WorkOrders() {
       width: '5%',
       render: (value: unknown) => {
         const status = value as string;
-        const colors: Record<string, string> = {
-          new: '⚪',
-          in_progress: '🟠',
-          ready: '🔵',
-          delivered: '🟢',
-        };
-        return colors[status] || '⚪';
+        const iconProps = { size: 18 };
+        let icon;
+        switch (status) {
+          case 'new':
+            icon = <div className="w-4 h-4 rounded-full border-2 border-slate-900 bg-white" />;
+            break;
+          case 'in_progress':
+            icon = <Clock {...iconProps} className="text-orange-500" />;
+            break;
+          case 'ready':
+            icon = <CheckCircle2 {...iconProps} className="text-blue-500" />;
+            break;
+          case 'delivered':
+            icon = <Check {...iconProps} className="text-emerald-500" />;
+            break;
+          default:
+            icon = <Circle {...iconProps} className="text-slate-400" />;
+        }
+        return <div className="flex items-center justify-center">{icon}</div>;
       },
     },
     {
@@ -284,14 +296,7 @@ export default function WorkOrders() {
         isLoading={isLoading}
         emptyMessage="No work orders found"
         rowKey="id"
-        actions={[
-          {
-            label: 'View',
-            icon: <Eye size={14} />,
-            onClick: (row) => handleViewOrder(row.id),
-            variant: 'primary',
-          },
-        ]}
+        onRowClick={(row) => handleViewOrder(row.id)}
       />
 
       {/* Create Order Modal */}
