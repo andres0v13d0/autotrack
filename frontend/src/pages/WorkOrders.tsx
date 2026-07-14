@@ -443,7 +443,6 @@ export default function WorkOrders() {
                       </td>
                       <td className="px-4 py-3">
                         <input 
-                          ref={itemNameInputRef}
                           {...registerItem('name')} 
                           className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
                           placeholder="Item name" 
