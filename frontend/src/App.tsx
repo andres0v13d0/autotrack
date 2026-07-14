@@ -30,7 +30,7 @@ export default function App() {
             <Route path="/work-orders" element={<ProtectedRoute><WorkOrders /></ProtectedRoute>} />
             <Route path="/vehicles/:vehicleId/work-orders" element={<ProtectedRoute><VehicleWorkOrders /></ProtectedRoute>} />
             <Route path="/vehicles/:vehicleId/work-orders/:workOrderId" element={<ProtectedRoute><WorkOrderDetail /></ProtectedRoute>} />
-            <Route path="/settings" element={<ProtectedRoute allowedRoles={['admin']}><Settings /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><Settings /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </BrowserRouter>

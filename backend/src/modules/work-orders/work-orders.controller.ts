@@ -71,9 +71,9 @@ export class WorkOrdersController {
 
   @Get(':id/pdf-data')
   @Roles('admin', 'front_desk', 'technician')
-  async getPdfData(@Param('id') id: string) {
+  async getPdfData(@Param('id') id: string, @Request() req: any) {
     const workOrder = await this.workOrdersService.findOne(id);
-    const settings = await this.pdfService.getSettings();
+    const settings = await this.pdfService.getSettings(req.user.id);
     return {
       workOrder,
       settings,

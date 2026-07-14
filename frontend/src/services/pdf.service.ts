@@ -25,9 +25,12 @@ export const pdfService = {
     }
   },
 
-  downloadWorkOrderPdf: async (workOrderId: string) => {
+  downloadWorkOrderPdf: async (workOrderId: string, customTaxRate?: number) => {
     try {
       const { workOrder, settings } = await pdfService.getPdfData(workOrderId);
+      if (customTaxRate !== undefined) {
+        workOrder.tax_rate = customTaxRate;
+      }
       await generateAndDownloadPdf(workOrder, settings);
     } catch (error) {
       console.error('Failed to download PDF:', error);

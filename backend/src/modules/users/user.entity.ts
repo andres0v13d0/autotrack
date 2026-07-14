@@ -4,7 +4,10 @@ import {
   Column,
   CreateDateColumn,
   UpdateDateColumn,
+  OneToOne,
+  JoinColumn,
 } from 'typeorm';
+import { Setting } from '../settings/setting.entity';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -28,6 +31,9 @@ export class User {
 
   @Column({ type: 'enum', enum: UserRole, default: UserRole.FRONT_DESK })
   role: UserRole;
+
+  @OneToOne(() => Setting, (setting) => setting.user)
+  settings: Setting;
 
   @CreateDateColumn()
   created_at: Date;

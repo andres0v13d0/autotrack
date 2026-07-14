@@ -1,4 +1,4 @@
-import { IsNumber, IsString, IsOptional, Min, Max } from 'class-validator';
+import { IsNumber, IsString, IsOptional, Min, Max, IsEmail } from 'class-validator';
 
 export class UpdateSettingDto {
   @IsOptional()
@@ -18,4 +18,20 @@ export class UpdateSettingDto {
   @IsOptional()
   @IsString()
   shop_phone?: string;
+
+  @IsOptional()
+  @IsString()
+  shop_email?: string;
+
+  @IsOptional()
+  @IsString()
+  shop_description?: string;
+
+  @IsOptional()
+  @IsString()
+  shop_slogan?: string;
+
+  @IsOptional()
+  @IsString()
+  shop_logo_url?: string;
 }

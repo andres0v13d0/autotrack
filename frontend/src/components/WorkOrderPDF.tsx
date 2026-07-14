@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, pdf } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, pdf, Image } from '@react-pdf/renderer';
 import type { WorkOrder } from '../types/workOrder';
 
 interface WorkOrderPDFProps {
@@ -8,50 +8,139 @@ interface WorkOrderPDFProps {
     shop_name: string;
     shop_address: string;
     shop_phone: string;
+    shop_email?: string;
+    shop_description?: string;
+    shop_slogan?: string;
+    shop_logo_url?: string;
   };
 }
 
+const colors = {
+  primary: '#0f1f3d',
+  secondary: '#f97316',
+  accent: '#6366f1',
+  success: '#10b981',
+  border: '#e5e7eb',
+  lightBg: '#f9fafb',
+  text: '#1f2937',
+  lightText: '#6b7280',
+};
+
 const styles = StyleSheet.create({
   page: {
-    padding: 40,
+    padding: 50,
     backgroundColor: '#ffffff',
     fontFamily: 'Helvetica',
   },
   header: {
-    marginBottom: 20,
-    textAlign: 'center',
+    marginBottom: 30,
+    paddingBottom: 20,
+    borderBottomWidth: 3,
+    borderBottomColor: colors.secondary,
   },
-  shopName: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 5,
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
   },
   shopInfo: {
-    fontSize: 10,
-    color: '#666',
+    flex: 1,
   },
-  title: {
-    fontSize: 14,
+  logo: {
+    width: 60,
+    height: 60,
+    marginBottom: 12,
+    borderRadius: 6,
+  },
+  shopName: {
+    fontSize: 28,
     fontWeight: 'bold',
-    marginTop: 10,
-    marginBottom: 10,
+    color: colors.primary,
+    marginBottom: 4,
+  },
+  shopSlogan: {
+    fontSize: 11,
+    color: colors.secondary,
+    fontStyle: 'italic',
+    marginBottom: 8,
+  },
+  shopAddress: {
+    fontSize: 10,
+    color: colors.lightText,
+    marginBottom: 4,
+    lineHeight: 1.4,
+  },
+  shopPhone: {
+    fontSize: 10,
+    color: colors.lightText,
+    marginBottom: 4,
+  },
+  orderNumberBadge: {
+    backgroundColor: colors.secondary,
+    paddingHorizontal: 15,
+    paddingVertical: 10,
+    borderRadius: 8,
     textAlign: 'center',
   },
-  orderInfo: {
-    fontSize: 9,
-    marginBottom: 15,
-    lineHeight: 1.5,
+  orderNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
   },
-  section: {
+  orderNumberLabel: {
+    fontSize: 9,
+    color: '#ffffff',
+    marginTop: 4,
+  },
+  title: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: colors.primary,
     marginBottom: 20,
   },
-  sectionTitle: {
-    fontSize: 12,
+  section: {
+    marginBottom: 25,
+  },
+  sectionGrid: {
+    flexDirection: 'row',
+    gap: 20,
+    marginBottom: 25,
+  },
+  gridCol: {
+    flex: 1,
+  },
+  gridColLabel: {
+    fontSize: 10,
     fontWeight: 'bold',
-    marginBottom: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: '#000',
-    paddingBottom: 5,
+    color: colors.primary,
+    textTransform: 'uppercase',
+    marginBottom: 8,
+    letterSpacing: 1,
+  },
+  gridColValue: {
+    fontSize: 11,
+    color: colors.text,
+    lineHeight: 1.5,
+  },
+  vehicleInfo: {
+    backgroundColor: colors.lightBg,
+    padding: 15,
+    borderRadius: 6,
+    marginBottom: 20,
+  },
+  vehicleItem: {
+    flexDirection: 'row',
+    marginBottom: 8,
+  },
+  vehicleLabel: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: colors.primary,
+    width: 70,
+  },
+  vehicleValue: {
+    fontSize: 10,
+    color: colors.text,
   },
   table: {
     width: '100%',
@@ -59,20 +148,37 @@ const styles = StyleSheet.create({
   },
   tableHeader: {
     flexDirection: 'row',
-    backgroundColor: '#f3f4f6',
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    paddingBottom: 5,
-    marginBottom: 5,
+    backgroundColor: colors.primary,
+    borderRadius: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 12,
+    marginBottom: 1,
+  },
+  tableHeaderCell: {
+    fontSize: 10,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+  },
+  tableHeaderCellName: {
+    flex: 2,
+  },
+  tableHeaderCellNumber: {
+    textAlign: 'right',
   },
   tableRow: {
     flexDirection: 'row',
-    paddingBottom: 5,
-    borderBottomWidth: 0.5,
-    borderBottomColor: '#eee',
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
+  },
+  tableRowEven: {
+    backgroundColor: colors.lightBg,
   },
   tableCell: {
     fontSize: 9,
+    color: colors.text,
     flex: 1,
   },
   tableCellName: {
@@ -80,133 +186,223 @@ const styles = StyleSheet.create({
   },
   tableCellNumber: {
     textAlign: 'right',
+    fontWeight: '500',
   },
-  totalsSection: {
-    width: '100%',
+  summarySection: {
+    backgroundColor: colors.lightBg,
+    padding: 20,
+    borderRadius: 6,
     marginTop: 20,
+    marginBottom: 20,
+  },
+  summaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 10,
+  },
+  summaryLabel: {
+    fontSize: 10,
+    color: colors.lightText,
+    fontWeight: '500',
+  },
+  summaryValue: {
+    fontSize: 10,
+    color: colors.text,
+    fontWeight: '600',
   },
   totalRow: {
     flexDirection: 'row',
-    marginBottom: 5,
-    justifyContent: 'flex-end',
-    paddingRight: 40,
+    justifyContent: 'space-between',
+    paddingTop: 12,
+    marginTop: 12,
+    borderTopWidth: 2,
+    borderTopColor: colors.secondary,
   },
   totalLabel: {
-    fontSize: 10,
+    fontSize: 12,
     fontWeight: 'bold',
-    width: 80,
+    color: colors.primary,
   },
   totalValue: {
-    fontSize: 10,
+    fontSize: 16,
     fontWeight: 'bold',
-    width: 50,
-    textAlign: 'right',
+    color: colors.secondary,
   },
-  grandTotal: {
-    flexDirection: 'row',
-    marginTop: 10,
-    paddingTop: 10,
-    borderTopWidth: 2,
-    borderTopColor: '#000',
-    justifyContent: 'flex-end',
-    paddingRight: 40,
+  footer: {
+    marginTop: 30,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: colors.border,
+    textAlign: 'center',
+    fontSize: 8,
+    color: colors.lightText,
   },
-  grandTotalLabel: {
-    fontSize: 12,
+  descriptionBox: {
+    backgroundColor: colors.lightBg,
+    padding: 12,
+    borderRadius: 6,
+    borderLeftWidth: 3,
+    borderLeftColor: colors.accent,
+    marginBottom: 20,
+  },
+  descriptionLabel: {
+    fontSize: 9,
     fontWeight: 'bold',
-    width: 80,
+    color: colors.primary,
+    marginBottom: 6,
   },
-  grandTotalValue: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    width: 50,
-    textAlign: 'right',
+  descriptionText: {
+    fontSize: 9,
+    color: colors.text,
+    lineHeight: 1.5,
   },
 });
 
 const WorkOrderPDFDocument: React.FC<WorkOrderPDFProps> = ({ workOrder, settings }) => {
+  const subtotal = typeof workOrder.subtotal === 'string' ? parseFloat(workOrder.subtotal) : workOrder.subtotal;
+  const taxRate = Number(workOrder.tax_rate);
+  const calculatedTax = subtotal * taxRate;
+  const total = subtotal + calculatedTax;
+
   return (
     <Document>
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.shopName}>{settings.shop_name}</Text>
-          <Text style={styles.shopInfo}>{settings.shop_address}</Text>
-          <Text style={styles.shopInfo}>{settings.shop_phone}</Text>
+          <View style={styles.headerContent}>
+            <View style={styles.shopInfo}>
+              {settings.shop_logo_url && (
+                <Image
+                  src={settings.shop_logo_url}
+                  style={styles.logo}
+                />
+              )}
+              <Text style={styles.shopName}>{settings.shop_name || 'AutoTrack Shop'}</Text>
+              {settings.shop_slogan && (
+                <Text style={styles.shopSlogan}>{settings.shop_slogan}</Text>
+              )}
+              {settings.shop_address && (
+                <Text style={styles.shopAddress}>{settings.shop_address}</Text>
+              )}
+              {settings.shop_phone && (
+                <Text style={styles.shopPhone}>{settings.shop_phone}</Text>
+              )}
+              {settings.shop_email && (
+                <Text style={styles.shopPhone}>{settings.shop_email}</Text>
+              )}
+            </View>
+            <View style={styles.orderNumberBadge}>
+              <Text style={styles.orderNumber}>
+                #{workOrder.order_number || workOrder.id.slice(0, 8)}
+              </Text>
+              <Text style={styles.orderNumberLabel}>WORK ORDER</Text>
+            </View>
+          </View>
         </View>
 
-        {/* Title */}
-        <Text style={styles.title}>WORK ORDER</Text>
-
-        {/* Order Info */}
-        <View style={styles.orderInfo}>
-          <Text>Order #: {workOrder.order_number || workOrder.id.slice(0, 8)}</Text>
-          <Text>Date: {new Date(workOrder.created_at).toLocaleDateString()}</Text>
-          {workOrder.vehicle && (
-            <Text>
-              Vehicle: {workOrder.vehicle.plate} - {workOrder.vehicle.model}
+        {/* Order Details Grid */}
+        <View style={styles.sectionGrid}>
+          <View style={styles.gridCol}>
+            <Text style={styles.gridColLabel}>Order Date</Text>
+            <Text style={styles.gridColValue}>
+              {new Date(workOrder.created_at).toLocaleDateString('en-US', {
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+              })}
             </Text>
-          )}
-          {workOrder.vehicle?.customer && (
-            <Text>Customer: {workOrder.vehicle.customer.name}</Text>
-          )}
-          {workOrder.description_needed && (
-            <Text>Description: {workOrder.description_needed}</Text>
-          )}
+          </View>
+          <View style={styles.gridCol}>
+            <Text style={styles.gridColLabel}>Status</Text>
+            <Text style={styles.gridColValue}>
+              {workOrder.delivery_status.replace(/_/g, ' ').toUpperCase()}
+            </Text>
+          </View>
+          <View style={styles.gridCol}>
+            <Text style={styles.gridColLabel}>Tax Rate</Text>
+            <Text style={styles.gridColValue}>{(taxRate * 100).toFixed(2)}%</Text>
+          </View>
         </View>
+
+        {/* Vehicle Information */}
+        {workOrder.vehicle && (
+          <View style={styles.vehicleInfo}>
+            <View style={styles.vehicleItem}>
+              <Text style={styles.vehicleLabel}>Plate:</Text>
+              <Text style={styles.vehicleValue}>{workOrder.vehicle.plate}</Text>
+            </View>
+            <View style={styles.vehicleItem}>
+              <Text style={styles.vehicleLabel}>Model:</Text>
+              <Text style={styles.vehicleValue}>{workOrder.vehicle.model}</Text>
+            </View>
+            {workOrder.vehicle.customer && (
+              <View style={styles.vehicleItem}>
+                <Text style={styles.vehicleLabel}>Customer:</Text>
+                <Text style={styles.vehicleValue}>{workOrder.vehicle.customer.name}</Text>
+              </View>
+            )}
+          </View>
+        )}
+
+        {/* Description */}
+        {workOrder.description_needed && (
+          <View style={styles.descriptionBox}>
+            <Text style={styles.descriptionLabel}>Work Description</Text>
+            <Text style={styles.descriptionText}>{workOrder.description_needed}</Text>
+          </View>
+        )}
 
         {/* Items Table */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Items</Text>
-          <View style={styles.table}>
-            <View style={styles.tableHeader}>
-              <Text style={[styles.tableCell, styles.tableCellName]}>Description</Text>
-              <Text style={[styles.tableCell, styles.tableCellNumber]}>Price</Text>
-              <Text style={[styles.tableCell, styles.tableCellNumber]}>Qty</Text>
-              <Text style={[styles.tableCell, styles.tableCellNumber]}>Total</Text>
-            </View>
-            {workOrder.items.map((item, idx) => {
-              const itemTotal = item.price * item.qty;
-              return (
-                <View key={idx} style={styles.tableRow}>
-                  <Text style={[styles.tableCell, styles.tableCellName]}>
-                    {item.name.substring(0, 40)}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellNumber]}>
-                    ${(typeof item.price === 'string' ? parseFloat(item.price) : item.price).toFixed(2)}
-                  </Text>
-                  <Text style={[styles.tableCell, styles.tableCellNumber]}>{item.qty}</Text>
-                  <Text style={[styles.tableCell, styles.tableCellNumber]}>
-                    ${itemTotal.toFixed(2)}
-                  </Text>
-                </View>
-              );
-            })}
+        <Text style={styles.title}>Line Items</Text>
+        <View style={styles.table}>
+          <View style={styles.tableHeader}>
+            <Text style={[styles.tableHeaderCell, styles.tableHeaderCellName]}>Description</Text>
+            <Text style={[styles.tableHeaderCell, styles.tableHeaderCellNumber]}>Unit Price</Text>
+            <Text style={[styles.tableHeaderCell, styles.tableHeaderCellNumber]}>Qty</Text>
+            <Text style={[styles.tableHeaderCell, styles.tableHeaderCellNumber]}>Total</Text>
+          </View>
+          {workOrder.items.map((item, idx) => {
+            const itemPrice = typeof item.price === 'string' ? parseFloat(item.price) : item.price;
+            const itemTotal = itemPrice * item.qty;
+            const rowStyle = idx % 2 === 0 ? [styles.tableRow, styles.tableRowEven] : styles.tableRow;
+            return (
+              <View key={idx} style={rowStyle}>
+                <Text style={[styles.tableCell, styles.tableCellName]}>
+                  {item.name}
+                </Text>
+                <Text style={[styles.tableCell, styles.tableCellNumber]}>
+                  ${itemPrice.toFixed(2)}
+                </Text>
+                <Text style={[styles.tableCell, styles.tableCellNumber]}>{item.qty}</Text>
+                <Text style={[styles.tableCell, styles.tableCellNumber]}>
+                  ${itemTotal.toFixed(2)}
+                </Text>
+              </View>
+            );
+          })}
+        </View>
+
+        {/* Summary Section */}
+        <View style={styles.summarySection}>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>Subtotal</Text>
+            <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
+          </View>
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryLabel}>
+              Tax ({(taxRate * 100).toFixed(2)}%)
+            </Text>
+            <Text style={styles.summaryValue}>${calculatedTax.toFixed(2)}</Text>
+          </View>
+          <View style={styles.totalRow}>
+            <Text style={styles.totalLabel}>TOTAL DUE</Text>
+            <Text style={styles.totalValue}>${total.toFixed(2)}</Text>
           </View>
         </View>
 
-        {/* Totals */}
-        <View style={styles.totalsSection}>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>Subtotal:</Text>
-            <Text style={styles.totalValue}>
-              ${(typeof workOrder.subtotal === 'string' ? parseFloat(workOrder.subtotal) : workOrder.subtotal).toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.totalRow}>
-            <Text style={styles.totalLabel}>
-              Tax ({(Number(workOrder.tax_rate) * 100).toFixed(2)}%):
-            </Text>
-            <Text style={styles.totalValue}>
-              ${(typeof workOrder.tax === 'string' ? parseFloat(workOrder.tax) : workOrder.tax).toFixed(2)}
-            </Text>
-          </View>
-          <View style={styles.grandTotal}>
-            <Text style={styles.grandTotalLabel}>TOTAL:</Text>
-            <Text style={styles.grandTotalValue}>
-              ${(typeof workOrder.total === 'string' ? parseFloat(workOrder.total) : workOrder.total).toFixed(2)}
-            </Text>
-          </View>
+        {/* Footer */}
+        <View style={styles.footer}>
+          <Text>Thank you for your business | Generated on {new Date().toLocaleDateString()}</Text>
         </View>
       </Page>
     </Document>
@@ -215,15 +411,15 @@ const WorkOrderPDFDocument: React.FC<WorkOrderPDFProps> = ({ workOrder, settings
 
 export const generateAndDownloadPdf = async (
   workOrder: WorkOrder,
-  settings: { shop_name: string; shop_address: string; shop_phone: string }
+  settings: any
 ) => {
   try {
     const fileName = `order-${workOrder.order_number || workOrder.id.slice(0, 8)}.pdf`;
-    
+
     const doc = (
       <WorkOrderPDFDocument workOrder={workOrder} settings={settings} />
     );
-    
+
     const blob = await pdf(doc).toBlob();
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');

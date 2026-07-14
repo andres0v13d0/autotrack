@@ -48,6 +48,7 @@ export default function WorkOrders() {
   const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
   const [editingItems, setEditingItems] = useState<Record<string, { price: string; qty: string }>>({});
   const [amountToPay, setAmountToPay] = useState<string>('');
+  const [taxRate, setTaxRate] = useState<string>('0');
   const itemNameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
@@ -102,15 +103,16 @@ export default function WorkOrders() {
         }
       }
 
-      // Generar y descargar PDF
-      console.log('Downloading PDF for order:', selectedWorkOrderId);
-      await pdfService.downloadWorkOrderPdf(selectedWorkOrderId);
+      // Generar y descargar PDF con tax rate
+      console.log('Downloading PDF for order:', selectedWorkOrderId, 'with tax rate:', taxRate);
+      await pdfService.downloadWorkOrderPdf(selectedWorkOrderId, parseFloat(taxRate) / 100);
 
       // Cerrar modal y limpiar
       setShowDetailModal(false);
       setSelectedWorkOrderId(null);
       resetItem();
       setAmountToPay('');
+      setTaxRate('0');
       
       // Refrescar datos
       qc.invalidateQueries({ queryKey: ['workOrders'] });
@@ -171,6 +173,7 @@ export default function WorkOrders() {
 
   const handleViewOrder = (workOrderId: string) => {
     setSelectedWorkOrderId(workOrderId);
+    setTaxRate('0');
     setShowDetailModal(true);
   };
 
@@ -600,8 +603,8 @@ export default function WorkOrders() {
                       min="0"
                       max="100"
                       className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
-                      defaultValue={(Number(selectedOrder.tax_rate) * 100).toFixed(2)}
-                      readOnly
+                      value={taxRate}
+                      onChange={(e) => setTaxRate(e.target.value)}
                     />
                     <span className="text-xs text-gray-500">%</span>
                   </div>

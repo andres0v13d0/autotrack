@@ -5,7 +5,7 @@ import { SettingsService } from '../settings/settings.service';
 export class PdfService {
   constructor(private settingsService: SettingsService) {}
 
-  async getSettings() {
-    return this.settingsService.getSettings();
+  async getSettings(userId: string) {
+    return this.settingsService.getSettings(userId);
   }
 }

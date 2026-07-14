@@ -93,14 +93,12 @@ export default function Layout({ children }: { children: ReactNode }) {
             icon={<Wrench size={18} strokeWidth={2} />}
             active={pathname.startsWith('/work-orders')}
           />
-          {isRole('admin') && (
-            <NavLink
-              to="/settings"
-              label="Settings"
-              icon={<SettingsIcon size={18} strokeWidth={2} />}
-              active={pathname === '/settings'}
-            />
-          )}
+          <NavLink
+            to="/settings"
+            label="Settings"
+            icon={<SettingsIcon size={18} strokeWidth={2} />}
+            active={pathname === '/settings'}
+          />
         </nav>
 
         {/* Solo logout */}
@@ -231,15 +229,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                   active={pathname.startsWith('/work-orders')}
                   onClick={closeSidebar}
                 />
-                {isRole('admin') && (
-                  <NavLink
-                    to="/settings"
-                    label="Settings"
-                    icon={<SettingsIcon size={18} strokeWidth={2} />}
-                    active={pathname === '/settings'}
-                    onClick={closeSidebar}
-                  />
-                )}
+                <NavLink
+                  to="/settings"
+                  label="Settings"
+                  icon={<SettingsIcon size={18} strokeWidth={2} />}
+                  active={pathname === '/settings'}
+                  onClick={closeSidebar}
+                />
               </nav>
 
               {/* Logout */}
