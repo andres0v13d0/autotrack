@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import Layout from '../components/Layout';
 import { reportsService } from '../services/reports.service';
 import { TrendingUp, Users, Wrench, DollarSign, BarChart3 } from 'lucide-react';
@@ -18,6 +19,7 @@ const roleBadgeColor: Record<string, string> = {
 export default function Dashboard() {
   const { t } = useTranslation();
   const { user } = useAuth();
+  const { settings } = useSettings();
 
   // Fetch dashboard summary
   const { data: summary, isLoading: loadingSummary } = useQuery({
@@ -121,28 +123,46 @@ export default function Dashboard() {
             background: 'linear-gradient(135deg, #0f1f3d 0%, #1a3260 100%)',
           }}
         >
-          <div className="flex items-center gap-3 mb-2">
-            <div
-              className="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white text-base"
-              style={{ backgroundColor: '#f97316' }}
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              {/* Logo or Avatar */}
+              {settings?.shop_logo_url ? (
+                <img
+                  src={settings.shop_logo_url}
+                  alt="Shop Logo"
+                  className="w-16 h-16 rounded-xl object-cover border-2 border-white/20"
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 rounded-xl flex items-center justify-center font-bold text-white text-2xl"
+                  style={{ backgroundColor: '#f97316' }}
+                >
+                  {user?.name?.[0]?.toUpperCase()}
+                </div>
+              )}
+
+              {/* Text Section */}
+              <div>
+                <p className="text-white/60 text-sm">{t('dashboard.title')}</p>
+                <h1 className="text-2xl font-bold">{t('dashboard.welcome', { name: user?.name })}</h1>
+                {settings?.shop_name && (
+                  <p className="text-sm text-white/70 mt-1">{settings.shop_name}</p>
+                )}
+              </div>
+            </div>
+
+            {/* Role Badge */}
+            <span
+              className="text-xs font-semibold px-4 py-2 rounded-full whitespace-nowrap"
+              style={{
+                backgroundColor: roleBadgeColor[user?.role ?? 'front_desk'] + '33',
+                color: roleBadgeColor[user?.role ?? 'front_desk'],
+                border: `1px solid ${roleBadgeColor[user?.role ?? 'front_desk']}55`,
+              }}
             >
-              {user?.name?.[0]?.toUpperCase()}
-            </div>
-            <div>
-              <p className="text-white/60 text-sm">{t('dashboard.title')}</p>
-              <h1 className="text-xl font-bold">{t('dashboard.welcome', { name: user?.name })}</h1>
-            </div>
+              {t(`roles.${user?.role}`)}
+            </span>
           </div>
-          <span
-            className="inline-block mt-3 text-xs font-semibold px-3 py-1 rounded-full"
-            style={{
-              backgroundColor: roleBadgeColor[user?.role ?? 'front_desk'] + '33',
-              color: roleBadgeColor[user?.role ?? 'front_desk'],
-              border: `1px solid ${roleBadgeColor[user?.role ?? 'front_desk']}55`,
-            }}
-          >
-            {t(`roles.${user?.role}`)}
-          </span>
         </div>
 
         {/* Key Metrics */}
