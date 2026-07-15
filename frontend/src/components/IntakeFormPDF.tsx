@@ -9,9 +9,21 @@ interface IntakeFormPDFProps {
     shop_name: string;
     shop_address?: string;
     shop_phone?: string;
+    shop_email?: string;
+    shop_slogan?: string;
+    shop_logo_url?: string;
   };
   workOrder?: WorkOrder;
 }
+
+const formatPhoneUS = (phone: string): string => {
+  const cleaned = phone.replace(/\D/g, '');
+  const last10 = cleaned.slice(-10);
+  if (last10.length === 10) {
+    return `(${last10.slice(0, 3)}) ${last10.slice(3, 6)}-${last10.slice(6)}`;
+  }
+  return phone;
+};
 
 const colors = {
   primary: '#0f1f3d',
@@ -27,34 +39,67 @@ const styles = StyleSheet.create({
     padding: 20,
     backgroundColor: '#ffffff',
     fontFamily: 'Helvetica',
-    fontSize: 10,
   },
   header: {
-    marginBottom: 15,
-    borderBottomWidth: 2,
-    borderBottomColor: colors.secondary,
-    paddingBottom: 10,
-    display: 'flex',
+    marginBottom: 20,
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    gap: 15,
   },
-  headerLeft: {
+  logoBox: {
+    alignItems: 'center',
+    minWidth: 40,
+  },
+  logo: {
+    width: 60,
+    height: 60,
+    borderRadius: 4,
+  },
+  shopInfoBox: {
     flex: 1,
-  },
-  headerRight: {
-    textAlign: 'right',
-    width: 100,
+    flexDirection: 'column',
   },
   shopName: {
-    fontSize: 14,
+    fontSize: 11,
     fontWeight: 'bold',
     color: colors.primary,
     marginBottom: 3,
   },
-  shopInfo: {
-    fontSize: 8,
-    color: colors.lightText,
-    marginBottom: 1,
+  shopSlogan: {
+    fontSize: 7,
+    color: colors.secondary,
+    fontStyle: 'italic',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  infoRow: {
+    marginBottom: 2,
+  },
+  infoValue: {
+    fontSize: 7,
+    color: colors.text,
+    fontWeight: '500',
+    marginTop: 0,
+  },
+  orderNumberBadge: {
+    backgroundColor: colors.secondary,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 4,
+    textAlign: 'center',
+    minWidth: 80,
+  },
+  orderNumber: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  orderNumberLabel: {
+    fontSize: 7,
+    color: '#ffffff',
+    marginTop: 2,
+    letterSpacing: 0.5,
   },
   title: {
     fontSize: 13,
@@ -62,10 +107,6 @@ const styles = StyleSheet.create({
     color: colors.primary,
     marginBottom: 12,
     textAlign: 'center',
-  },
-  date: {
-    fontSize: 8,
-    color: colors.lightText,
   },
   twoColGrid: {
     display: 'flex',
@@ -170,33 +211,49 @@ const IntakeFormPDFDocument: React.FC<IntakeFormPDFProps> = ({ intakeForm, shopI
       <Page size="A4" style={styles.page}>
         {/* Header */}
         <View style={styles.header}>
-          <View style={styles.headerLeft}>
-            <Text style={styles.shopName}>{shopInfo.shop_name}</Text>
-            {shopInfo.shop_address && (
-              <Text style={styles.shopInfo}>{shopInfo.shop_address}</Text>
-            )}
-            {shopInfo.shop_phone && (
-              <Text style={styles.shopInfo}>{shopInfo.shop_phone}</Text>
+          {/* Logo Box - Left */}
+          <View style={styles.logoBox}>
+            {shopInfo.shop_logo_url ? (
+              <Image
+                src={shopInfo.shop_logo_url}
+                style={styles.logo}
+              />
+            ) : (
+              <View style={{ ...styles.logo, backgroundColor: colors.lightBg, justifyContent: 'center', alignItems: 'center' }}>
+                <Text style={{ fontSize: 14, color: colors.lightText }}>□</Text>
+              </View>
             )}
           </View>
-          <View style={styles.headerRight}>
-            {workOrder && workOrder.vehicle && (
-              <>
-                <Text style={{ fontSize: 9, fontWeight: 'bold', color: colors.primary, marginBottom: 2 }}>
-                  {workOrder.vehicle.plate}
-                </Text>
-                <Text style={{ fontSize: 8, color: colors.text, marginBottom: 2 }}>
-                  {workOrder.vehicle.model}
-                </Text>
-              </>
+
+          {/* Info Box - Center */}
+          <View style={styles.shopInfoBox}>
+            <Text style={styles.shopName}>{shopInfo.shop_name || 'AutoTrack Shop'}</Text>
+            {shopInfo.shop_slogan && (
+              <Text style={styles.shopSlogan}>{shopInfo.shop_slogan}</Text>
             )}
-            <Text style={styles.date}>
-              {new Date(intakeForm.created_at).toLocaleDateString('en-US', {
-                year: 'numeric',
-                month: '2-digit',
-                day: '2-digit',
-              })}
+            {shopInfo.shop_address && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>{shopInfo.shop_address}</Text>
+              </View>
+            )}
+            {shopInfo.shop_phone && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>{formatPhoneUS(shopInfo.shop_phone)}</Text>
+              </View>
+            )}
+            {shopInfo.shop_email && (
+              <View style={styles.infoRow}>
+                <Text style={styles.infoValue}>{shopInfo.shop_email}</Text>
+              </View>
+            )}
+          </View>
+
+          {/* Right: Order Number Badge */}
+          <View style={styles.orderNumberBadge}>
+            <Text style={styles.orderNumber}>
+              #{workOrder?.order_number || workOrder?.id?.slice(0, 8) || 'N/A'}
             </Text>
+            <Text style={styles.orderNumberLabel}>INTAKE FORM</Text>
           </View>
         </View>
 

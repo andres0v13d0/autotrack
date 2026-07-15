@@ -9,6 +9,7 @@ import Field, { inputCls } from './ui/Field';
 import SignaturePad from './ui/SignaturePad';
 import { intakeFormService } from '../services/intakeForm.service';
 import { settingsService } from '../services/settings.service';
+import { pdfService } from '../services/pdf.service';
 import { generateAndDownloadIntakeFormPdf } from './IntakeFormPDF';
 import type { WorkOrder } from '../types/workOrder';
 
@@ -94,15 +95,12 @@ export default function IntakeFormModal({ workOrder, onClose }: IntakeFormModalP
   }, [existingForm, reset]);
 
   const handleDownloadPDF = async () => {
-    if (!existingForm || !settings) return;
+    if (!existingForm || !workOrder.id) return;
     try {
       setIsDownloading(true);
-      const shopInfo = {
-        shop_name: settings.shop_name,
-        shop_address: settings.shop_address,
-        shop_phone: settings.shop_phone,
-      };
-      await generateAndDownloadIntakeFormPdf(existingForm, shopInfo, workOrder);
+      // Fetch shop data using the pdf-data endpoint
+      const { settings: shopData } = await pdfService.getPdfData(workOrder.id);
+      await generateAndDownloadIntakeFormPdf(existingForm, shopData, workOrder);
     } catch (error) {
       console.error('Error downloading PDF:', error);
     } finally {
