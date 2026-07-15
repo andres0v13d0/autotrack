@@ -8,7 +8,6 @@ import Modal from './ui/Modal';
 import Field, { inputCls } from './ui/Field';
 import SignaturePad from './ui/SignaturePad';
 import { intakeFormService } from '../services/intakeForm.service';
-import { settingsService } from '../services/settings.service';
 import { pdfService } from '../services/pdf.service';
 import { generateAndDownloadIntakeFormPdf } from './IntakeFormPDF';
 import type { WorkOrder } from '../types/workOrder';
@@ -51,10 +50,7 @@ export default function IntakeFormModal({ workOrder, onClose }: IntakeFormModalP
     throwOnError: false,
   });
 
-  const { data: settings } = useQuery({
-    queryKey: ['settings'],
-    queryFn: () => settingsService.getSettings(),
-  });
+
 
   const createMutation = useMutation({
     mutationFn: async (values: IntakeFormValues) => {
