@@ -3,8 +3,10 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
+import { FileText, Plus } from 'lucide-react';
 import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
+import IntakeFormModal from '../components/IntakeFormModal';
 import { workOrdersService } from '../services/workOrders.service';
 import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
@@ -35,6 +37,7 @@ export default function WorkOrderDetail() {
   const vehicle = MOCK_VEHICLES[vehicleId];
   const [pdfToast, setPdfToast] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
+  const [showIntakeForm, setShowIntakeForm] = useState(false);
 
   const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
     defaultValues: { qty: '1' },
@@ -155,6 +158,14 @@ export default function WorkOrderDetail() {
             onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'transparent'; e.currentTarget.style.color = '#0f1f3d'; }}
           >
             📄 {t('workOrders.generatePdf')}
+          </button>
+          <button
+            onClick={() => setShowIntakeForm(true)}
+            className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-white hover:opacity-90 transition-opacity"
+            style={{ backgroundColor: '#f97316' }}
+          >
+            <FileText size={16} />
+            Intake Form
           </button>
         </div>
       </div>
@@ -316,8 +327,34 @@ export default function WorkOrderDetail() {
               </form>
             )}
           </div>
+
+          {/* Intake Form */}
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <FileText size={18} style={{ color: '#f97316' }} />
+                <h2 className="font-semibold text-sm" style={{ color: '#0f1f3d' }}>Formulario de Recepción</h2>
+              </div>
+              <button
+                onClick={() => setShowIntakeForm(true)}
+                className="text-xs font-semibold px-3 py-1 rounded-lg text-white hover:opacity-90 inline-flex items-center gap-1"
+                style={{ backgroundColor: '#f97316' }}>
+                <Plus size={14} />
+                Crear
+              </button>
+            </div>
+            <p className="text-xs text-gray-500">Documento de recepción del vehículo con datos del cliente, condición del vehículo y firma digital.</p>
+          </div>
         </div>
       </div>
+
+      {/* Intake Form Modal */}
+      {showIntakeForm && order && (
+        <IntakeFormModal
+          workOrder={order}
+          onClose={() => setShowIntakeForm(false)}
+        />
+      )}
 
       {/* PDF toast */}
       {pdfToast && (

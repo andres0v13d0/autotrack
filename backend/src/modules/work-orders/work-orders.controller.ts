@@ -11,23 +11,23 @@ import {
   BadRequestException,
 } from '@nestjs/common';
 import { WorkOrdersService } from './work-orders.service';
+import { IntakeFormService } from './intake-form.service';
 import { CreateWorkOrderDto } from './dto/create-work-order.dto';
+import { CreateIntakeFormDto, UpdateIntakeFormDto } from './dto/intake-form.dto';
 import { AddItemDto } from './dto/add-item.dto';
 import { PdfService } from './pdf.service';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
-import { Roles } from '../../common/decorators/roles.decorator';
 
 @Controller('work-orders')
-@UseGuards(JwtAuthGuard, RolesGuard)
+@UseGuards(JwtAuthGuard)
 export class WorkOrdersController {
   constructor(
     private workOrdersService: WorkOrdersService,
+    private intakeFormService: IntakeFormService,
     private pdfService: PdfService,
   ) {}
 
   @Post()
-  @Roles('admin', 'front_desk')
   async create(@Body() dto: CreateWorkOrderDto, @Request() req) {
     if (!dto.vehicle_id || !dto.description_needed) {
       throw new BadRequestException('vehicle_id and description_needed are required');
@@ -41,43 +41,16 @@ export class WorkOrdersController {
   }
 
   @Get()
-  @Roles('admin', 'front_desk', 'technician')
   findAll() {
     return this.workOrdersService.findAll();
   }
 
-  @Get(':id')
-  @Roles('admin', 'front_desk', 'technician')
-  findOne(@Param('id') id: string) {
-    return this.workOrdersService.findOne(id);
-  }
-
   @Get('vehicle/:vehicleId')
-  @Roles('admin', 'front_desk', 'technician')
   findByVehicle(@Param('vehicleId') vehicleId: string) {
     return this.workOrdersService.findByVehicle(vehicleId);
   }
 
-  @Post(':id/items')
-  @Roles('admin', 'front_desk', 'technician')
-  addItem(@Param('id') id: string, @Body() dto: AddItemDto) {
-    return this.workOrdersService.addItem(id, dto);
-  }
-
-  @Delete(':id/items/:itemId')
-  @Roles('admin', 'front_desk', 'technician')
-  removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
-    return this.workOrdersService.removeItem(workOrderId, itemId);
-  }
-
-  @Patch(':id')
-  @Roles('admin', 'front_desk', 'technician')
-  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }) {
-    return this.workOrdersService.update(id, dto);
-  }
-
   @Get(':id/pdf-data')
-  @Roles('admin', 'front_desk', 'technician')
   async getPdfData(@Param('id') id: string, @Request() req: any) {
     const workOrder = await this.workOrdersService.findOne(id);
     const settings = await this.pdfService.getSettings(req.user.id);
@@ -85,5 +58,56 @@ export class WorkOrdersController {
       workOrder,
       settings,
     };
+  }
+
+  // ===== INTAKE FORM ENDPOINTS =====
+
+  @Get(':workOrderId/intake-form')
+  async getIntakeForm(@Param('workOrderId') workOrderId: string) {
+    try {
+      console.log('🔍 Getting intake form for work order:', workOrderId);
+      const result = await this.intakeFormService.findByWorkOrderId(workOrderId);
+      console.log('✅ Found intake form:', result);
+      return result;
+    } catch (error) {
+      console.error('❌ Error getting intake form:', error);
+      throw error;
+    }
+  }
+
+  @Get(':id')
+  findOne(@Param('id') id: string) {
+    return this.workOrdersService.findOne(id);
+  }
+
+  @Post(':id/items')
+  addItem(@Param('id') id: string, @Body() dto: AddItemDto) {
+    return this.workOrdersService.addItem(id, dto);
+  }
+
+  @Delete(':id/items/:itemId')
+  removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
+    return this.workOrdersService.removeItem(workOrderId, itemId);
+  }
+
+  @Patch(':id')
+  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }) {
+    return this.workOrdersService.update(id, dto);
+  }
+
+  @Post(':workOrderId/intake-form')
+  async createIntakeForm(@Param('workOrderId') workOrderId: string, @Body() dto: CreateIntakeFormDto) {
+    return this.intakeFormService.create({ ...dto, work_order_id: workOrderId });
+  }
+
+  @Patch('intake-form/:intakeFormId')
+  async updateIntakeForm(@Param('intakeFormId') intakeFormId: string, @Body() dto: UpdateIntakeFormDto) {
+    return this.intakeFormService.update(intakeFormId, dto);
+  }
+
+  @Delete('intake-form/:intakeFormId')
+  async deleteIntakeForm(@Param('intakeFormId') intakeFormId: string) {
+    await this.intakeFormService.delete(intakeFormId);
+    return { message: 'Intake form deleted' };
   }
 }

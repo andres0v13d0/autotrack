@@ -15,6 +15,7 @@ import { Customer } from './modules/customers/customer.entity';
 import { Vehicle } from './modules/vehicles/vehicle.entity';
 import { WorkOrder } from './modules/work-orders/work-order.entity';
 import { WorkOrderItem } from './modules/work-orders/work-order-item.entity';
+import { IntakeForm } from './modules/work-orders/intake-form.entity';
 import { Payment } from './modules/payments/payment.entity';
 import { Setting } from './modules/settings/setting.entity';
 
@@ -32,7 +33,7 @@ import { Setting } from './modules/settings/setting.entity';
           return {
             type: 'postgres',
             url: databaseUrl,
-            entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment, Setting],
+            entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, IntakeForm, Payment, Setting],
             synchronize: true,
             ssl: { rejectUnauthorized: false },
             logging: false,
@@ -47,7 +48,7 @@ import { Setting } from './modules/settings/setting.entity';
           username: config.get<string>('DATABASE_USER', 'postgres'),
           password: config.get<string>('DATABASE_PASSWORD', ''),
           database: config.get<string>('DATABASE_NAME', 'shop_management'),
-          entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, Payment, Setting],
+          entities: [User, Customer, Vehicle, WorkOrder, WorkOrderItem, IntakeForm, Payment, Setting],
           synchronize: true,
           logging: ['error', 'warn'],
         };

@@ -9,6 +9,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import Layout from '../components/Layout';
 import Table from '../components/ui/Table';
 import WorkOrderFilters from '../components/WorkOrderFilters';
+import IntakeFormModal from '../components/IntakeFormModal';
 import type { TableColumn } from '../components/ui/Table';
 import { workOrdersService } from '../services/workOrders.service';
 import { vehiclesService } from '../services/vehicles.service';
@@ -17,12 +18,11 @@ import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
 import type { Vehicle } from '../types';
-import { Plus, Circle, Clock, CheckCircle2, Check } from 'lucide-react';
+import { Plus, Circle, Clock, CheckCircle2, Check, FileText } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import Field, { inputCls } from '../components/ui/Field';
 
 const createOrderSchema = z.object({
-  customer_id: z.string().min(1, 'Select a customer'),
   vehicle_id: z.string().min(1, 'Select a vehicle'),
   description_needed: z.string().min(3, 'Description required'),
 });
@@ -39,6 +39,7 @@ export default function WorkOrders() {
   const qc = useQueryClient();
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [showIntakeForm, setShowIntakeForm] = useState(false);
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | null>(null);
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
   const [loadingVehicles, setLoadingVehicles] = useState(false);
@@ -135,7 +136,7 @@ export default function WorkOrders() {
 
   const createMutation = useMutation({
     mutationFn: async (values: CreateOrderValues) => {
-      return workOrdersService.create(values.vehicle_id, values.description_needed, values.customer_id);
+      return workOrdersService.create(values.vehicle_id, values.description_needed);
     },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['workOrders'] });
@@ -143,6 +144,10 @@ export default function WorkOrders() {
       resetCreate();
       setVehicles([]);
       handleResetCustomer();
+    },
+    onError: (error) => {
+      console.error('Error creating work order:', error);
+      alert(`Error creating work order: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
   });
 
@@ -361,13 +366,11 @@ export default function WorkOrders() {
         >
           <form onSubmit={handleCreateSubmit((v) => {
             if (!selectedCustomer) {
-              console.error('No customer selected');
+              alert('Please select a customer');
               return;
             }
-            createMutation.mutate({ ...v, customer_id: selectedCustomer.id });
+            createMutation.mutate(v);
           })} className="space-y-4">
-            {/* Hidden input for customer_id */}
-            <input type="hidden" {...registerCreate('customer_id')} value={selectedCustomer?.id || ''} />
             {/* Customer Search */}
             <div>
               <div className="flex items-center justify-between mb-2">
@@ -508,6 +511,15 @@ export default function WorkOrders() {
                 className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 Cancel
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowIntakeForm(true)}
+                className="px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 cursor-pointer transition-opacity inline-flex items-center gap-2"
+                style={{ backgroundColor: '#10b981' }}
+              >
+                <FileText size={16} />
+                Intake Form
               </button>
               <button
                 type="button"
@@ -756,6 +768,14 @@ export default function WorkOrders() {
             </div>
           </div>
         </Modal>
+      )}
+
+      {/* Intake Form Modal */}
+      {showIntakeForm && selectedOrder && (
+        <IntakeFormModal
+          workOrder={selectedOrder}
+          onClose={() => setShowIntakeForm(false)}
+        />
       )}
     </Layout>
   );
