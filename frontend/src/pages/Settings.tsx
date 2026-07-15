@@ -9,6 +9,7 @@ import { useRef, useState } from 'react';
 import { Upload, X, Image as ImageIcon, FileText, Phone } from 'lucide-react';
 
 const settingsSchema = z.object({
+  tax_rate: z.number().min(0).max(1).optional(),
   shop_name: z.string().min(2).optional(),
   shop_address: z.string().optional(),
   shop_phone: z.string().optional(),
@@ -19,7 +20,7 @@ const settingsSchema = z.object({
 });
 type SettingsFormValues = z.infer<typeof settingsSchema>;
 
-type Tab = 'logo' | 'basic' | 'contact';
+type Tab = 'logo' | 'basic' | 'contact' | 'tax';
 
 export default function Settings() {
   const qc = useQueryClient();
@@ -35,6 +36,7 @@ export default function Settings() {
   const { register, handleSubmit, reset, watch, setValue, formState: { errors } } = useForm<SettingsFormValues>({
     resolver: zodResolver(settingsSchema),
     values: settings ? {
+      tax_rate: settings.tax_rate || 0.0875,
       shop_name: settings.shop_name || '',
       shop_address: settings.shop_address || '',
       shop_phone: settings.shop_phone || '',
@@ -101,6 +103,10 @@ export default function Settings() {
         shop_email: values.shop_email,
         shop_address: values.shop_address,
       };
+    } else if (activeTab === 'tax') {
+      dataToSave = {
+        tax_rate: values.tax_rate,
+      };
     } else if (activeTab === 'logo') {
       dataToSave = {
         shop_logo_url: values.shop_logo_url,
@@ -122,6 +128,7 @@ export default function Settings() {
     { id: 'logo', label: 'Shop Logo', icon: <ImageIcon size={18} /> },
     { id: 'basic', label: 'Basic Information', icon: <FileText size={18} /> },
     { id: 'contact', label: 'Contact Information', icon: <Phone size={18} /> },
+    { id: 'tax', label: 'Tax Rate', icon: <FileText size={18} /> },
   ];
 
   return (
@@ -263,6 +270,31 @@ export default function Settings() {
                     className={`${inputCls(!!errors.shop_address)} min-h-24 resize-none`}
                     placeholder="123 Main St, Miami, FL 33101, USA"
                   />
+                </Field>
+              </div>
+            )}
+
+            {/* Tax Rate Tab */}
+            {activeTab === 'tax' && (
+              <div className="space-y-5">
+                <Field label="Tax Rate" error={errors.tax_rate?.message}>
+                  <div className="flex items-center gap-3">
+                    <input
+                      {...register('tax_rate', { valueAsNumber: true })}
+                      type="number"
+                      step="0.0001"
+                      min="0"
+                      max="1"
+                      className={`${inputCls(!!errors.tax_rate)} w-32`}
+                      placeholder="0.0875"
+                    />
+                    <span className="text-gray-600 font-medium text-sm min-w-fit">
+                      ({watch('tax_rate') ? (watch('tax_rate')! * 100).toFixed(2) : '0.00'}%)
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-500 mt-3">
+                    Enter as decimal (0.0875 = 8.75%). This rate will be applied to all work orders by default.
+                  </p>
                 </Field>
               </div>
             )}

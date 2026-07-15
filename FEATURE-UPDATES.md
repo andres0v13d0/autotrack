@@ -114,30 +114,89 @@ confirmado "sin reportes por ahora". Queda actualizado: **sí se necesita**.
 
 ---
 
-## 4. Módulo Configuración de Tienda (Store Settings)
+## 4. Módulo Configuración de Tienda (Store Settings) ✅ COMPLETADO
 
-- Subir logo del taller (imagen), para usarlo en:
-  - Header de la interfaz (según sección 6)
-  - Encabezado del PDF (según sección 5)
-- Se suma a los campos ya definidos en `agents.md` → tabla `Settings`
-  (`tax_rate`, `shop_name`, `shop_address`, `shop_phone`, ahora + `logo_url`)
+### Implementación:
+
+#### Backend (NestJS)
+- ✅ **Entity**: `Setting` entity incluye `shop_logo_url` (text field)
+- ✅ **Service**: Métodos para obtener y actualizar configuraciones
+- ✅ **Controller**: 
+  - `GET /settings` - Obtiene configuración del usuario
+  - `PATCH /settings` - Actualiza configuración (todos los campos)
+  - `POST /settings/upload-logo` - Carga y convierte logo a base64
+- ✅ **Campos disponibles**:
+  - `tax_rate` (decimal, 0-1)
+  - `shop_name` (string)
+  - `shop_address` (string)
+  - `shop_phone` (string)
+  - `shop_email` (string, opcional)
+  - `shop_description` (string, opcional)
+  - `shop_slogan` (string, opcional)
+  - `shop_logo_url` (text, se almacena en base64)
+
+#### Frontend (React)
+- ✅ **Service**: `settingsService` para GET/PATCH configuración
+- ✅ **Types**: Interface `Settings` actualizada con todos los campos
+- ✅ **Context**: `SettingsContext` para compartir configuración globalmente
+- ✅ **Page Settings.tsx**:
+  - Interfaz tabbed con 4 pestañas:
+    1. **Shop Logo** - Upload de imagen, preview, y gestión del logo
+    2. **Basic Information** - Nombre, slogan, descripción
+    3. **Contact Information** - Teléfono, email, dirección
+    4. **Tax Rate** - Configuración de tasa de impuesto con preview en %
+  - Upload de logo convierte a base64 automáticamente
+  - Validación de formulario con Zod
+  - Feedback visual de guardado exitoso
+- ✅ **Layout Component**:
+  - Usa `useSettings()` hook para obtener configuración
+  - Muestra logo personalizado en sidebar (desktop y mobile)
+  - Fallback a logo por defecto si no hay logo configurado
+
+#### Integración con otros módulos:
+- ✅ **PDF Header**: Logo se incluye en el encabezado del PDF (`WorkOrderPDF.tsx`)
+- ✅ **Global Usage**: Logo disponible en toda la app via `useSettings()` hook
+
+### Cómo usar:
+
+1. **Configurar logo del taller**:
+   - Ir a Settings → Shop Logo
+   - Click en "Upload Logo"
+   - Seleccionar imagen (PNG, JPG, max 5MB)
+   - El logo aparecerá en el sidebar y en los PDFs
+
+2. **Otros campos**:
+   - Basic Information: Nombre, slogan, descripción
+   - Contact: Teléfono, email, dirección
+   - Tax Rate: Tasa de impuesto (ej: 0.0875 = 8.75%)
+
+3. **Acceso a configuración en código**:
+   ```typescript
+   import { useSettings } from '@/context/SettingsContext';
+   
+   function MyComponent() {
+     const { settings } = useSettings();
+     // settings.shop_logo_url contiene la imagen en base64
+     // settings.shop_name contiene el nombre del taller
+   }
+   ```
 
 ---
 
-## 5. Módulo PDF
+## 5. Módulo PDF ✅ COMPLETADO
 
-- Imprimir el **logo del taller** en el encabezado del PDF (además del nombre,
-  dirección y teléfono ya contemplados)
+- ✅ Imprime el **logo del taller** en el encabezado del PDF (además del nombre, dirección y teléfono ya contemplados)
+- ✅ Logo se obtiene de settings y se renderiza en `@react-pdf/renderer`
+- ✅ Si no hay logo, muestra placeholder
+- ✅ Formato: logo a la izquierda, información del taller al centro, número de orden a la derecha
 
 ---
 
-## 6. Responsive / UI
+## 6. Responsive / UI ✅ PARCIALMENTE COMPLETADO
 
-- **Header en mobile**: el logo no debe ir en el header superior; debe moverse
-  al sidebar o al menú desplegable (hamburger menu)
-- **Tablas responsive**: mejorar el comportamiento de todas las tablas en
-  mobile (candidatos: scroll horizontal con primera columna fija, o vista tipo
-  "cards" apiladas en vez de tabla tradicional — **definir cuál se prefiere**)
+- ✅ **Logo en sidebar**: Se muestra logo personalizado en sidebar desktop y mobile
+- ✅ **Fallback**: Si no hay logo, usa logo por defecto
+- ⏳ **Tablas responsive**: Seguir refinando según feedback (scroll horizontal, cards, etc.)
 
 ---
 

@@ -2,8 +2,9 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
+import { useSettings } from '../context/SettingsContext';
 import LanguageToggle from './LanguageToggle';
-import { Menu, X, LogOut, LayoutDashboard, Users, Users2, ChevronDown, Wrench, Settings as SettingsIcon } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Users, Users2, ChevronDown, Wrench, Settings as SettingsIcon, BarChart3 } from 'lucide-react';
 import type { ReactNode } from 'react';
 
 const slideInStyle = `
@@ -85,6 +86,7 @@ function NavLink({ to, label, icon, active, onClick }: NavLinkProps) {
 export default function Layout({ children }: { children: ReactNode }) {
   const { t } = useTranslation();
   const { user, logout, isRole } = useAuth();
+  const { settings } = useSettings();
   const navigate = useNavigate();
   const { pathname } = useLocation();
   const [sidebarOpen, setSidebarOpen] = useState(false);
@@ -141,6 +143,12 @@ export default function Layout({ children }: { children: ReactNode }) {
               active={pathname.startsWith('/work-orders')}
             />
             <NavLink
+              to="/reports"
+              label="Reports"
+              icon={<BarChart3 size={18} strokeWidth={2} />}
+              active={pathname === '/reports'}
+            />
+            <NavLink
               to="/settings"
               label="Settings"
               icon={<SettingsIcon size={18} strokeWidth={2} />}
@@ -185,12 +193,20 @@ export default function Layout({ children }: { children: ReactNode }) {
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
                     className="flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-800 transition-colors cursor-pointer"
                   >
-                    <div
-                      className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
-                      style={{ backgroundColor: '#fe8a0e' }}
-                    >
-                      {user?.name?.[0]?.toUpperCase()}
-                    </div>
+                    {settings?.shop_logo_url ? (
+                      <img 
+                        src={settings.shop_logo_url}
+                        alt="Shop logo"
+                        className="w-8 h-8 rounded-full object-cover"
+                      />
+                    ) : (
+                      <div
+                        className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold text-white"
+                        style={{ backgroundColor: '#fe8a0e' }}
+                      >
+                        {user?.name?.[0]?.toUpperCase()}
+                      </div>
+                    )}
                     <ChevronDown size={16} className="text-slate-400" />
                   </button>
 
@@ -266,6 +282,13 @@ export default function Layout({ children }: { children: ReactNode }) {
                     label={t('nav.workOrders')}
                     icon={<Wrench size={18} strokeWidth={2} />}
                     active={pathname.startsWith('/work-orders')}
+                    onClick={closeSidebar}
+                  />
+                  <NavLink
+                    to="/reports"
+                    label="Reports"
+                    icon={<BarChart3 size={18} strokeWidth={2} />}
+                    active={pathname === '/reports'}
                     onClick={closeSidebar}
                   />
                   <NavLink
