@@ -10,6 +10,7 @@ import { VehiclesModule } from './modules/vehicles/vehicles.module';
 import { WorkOrdersModule } from './modules/work-orders/work-orders.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { SettingsModule } from './modules/settings/settings.module';
+import { ReportsModule } from './modules/reports/reports.module';
 import { User } from './modules/users/user.entity';
 import { Customer } from './modules/customers/customer.entity';
 import { Vehicle } from './modules/vehicles/vehicle.entity';
@@ -62,6 +63,7 @@ import { Setting } from './modules/settings/setting.entity';
     WorkOrdersModule,
     PaymentsModule,
     SettingsModule,
+    ReportsModule,
   ],
   controllers: [AppController],
   providers: [AppService],
