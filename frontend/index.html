@@ -3,11 +3,61 @@
   <head>
     <meta charset="UTF-8" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>AutoTrack</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#0f1f3d" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="AutoTrack" />
+    
+    <!-- App Icons -->
+    <link rel="apple-touch-icon" href="/logo.jpeg" />
+    <link rel="icon" type="image/jpeg" href="/logo.jpeg" sizes="192x192" />
+    <link rel="icon" type="image/jpeg" href="/logo.jpeg" sizes="512x512" />
+    
+    <!-- Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- SEO & Social -->
+    <title>AutoTrack - Work Order Management System</title>
+    <meta name="description" content="Manage your automotive work orders, customers, and payments efficiently with AutoTrack." />
+    <meta name="keywords" content="automotive, work orders, management, customers, payments" />
+    <meta name="author" content="AutoTrack" />
+    
+    <!-- Open Graph / Facebook -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://autotrack.app/" />
+    <meta property="og:title" content="AutoTrack - Work Order Management" />
+    <meta property="og:description" content="Manage your automotive work orders, customers, and payments efficiently." />
+    <meta property="og:image" content="https://autotrack.app/logo.jpeg" />
+    <meta property="og:image:width" content="512" />
+    <meta property="og:image:height" content="512" />
+    
+    <!-- Twitter -->
+    <meta property="twitter:card" content="summary_large_image" />
+    <meta property="twitter:url" content="https://autotrack.app/" />
+    <meta property="twitter:title" content="AutoTrack - Work Order Management" />
+    <meta property="twitter:description" content="Manage your automotive work orders, customers, and payments efficiently." />
+    <meta property="twitter:image" content="https://autotrack.app/logo.jpeg" />
+    
+    <!-- WhatsApp / Messenger -->
+    <meta property="og:image" content="/logo.jpeg" />
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      // Service Worker Registration
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').then(
+            registration => console.log('✅ SW registered:', registration),
+            error => console.log('❌ SW registration failed:', error)
+          );
+        });
+      }
+    </script>
   </body>
 </html>

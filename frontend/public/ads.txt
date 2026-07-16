@@ -1,0 +1,6 @@
+# AutoTrack Ads.txt file
+# For ad verification purposes
+# Generated: 2026-01-01
+
+# Own ads.txt entry
+direct, 1a2b3c4d5e6f7g8h9i0j, DIRECT

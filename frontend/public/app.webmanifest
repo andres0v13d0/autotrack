@@ -1,0 +1,101 @@
+{
+  "name": "AutoTrack - Work Order Management System",
+  "short_name": "AutoTrack",
+  "description": "Manage your automotive work orders, customers, and payments efficiently.",
+  "start_url": "/?utm_source=pwa",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#0f1f3d",
+  "background_color": "#ffffff",
+  "dir": "ltr",
+  "lang": "en-US",
+  "categories": ["business", "productivity"],
+  "iarc_rating_id": "",
+  "screenshots": [
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "form_factor": "narrow",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "form_factor": "wide",
+      "purpose": "any"
+    }
+  ],
+  "icons": [
+    {
+      "src": "/favicon.ico",
+      "sizes": "32x32",
+      "type": "image/x-icon"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "any"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "192x192",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/logo.jpeg",
+      "sizes": "512x512",
+      "type": "image/jpeg",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Create Work Order",
+      "short_name": "New Order",
+      "description": "Create a new work order quickly",
+      "url": "/work-orders?new=true&utm_source=shortcut",
+      "icons": [
+        {
+          "src": "/logo.jpeg",
+          "sizes": "192x192",
+          "type": "image/jpeg"
+        }
+      ]
+    },
+    {
+      "name": "View Customers",
+      "short_name": "Customers",
+      "description": "View all customers",
+      "url": "/customers?utm_source=shortcut",
+      "icons": [
+        {
+          "src": "/logo.jpeg",
+          "sizes": "192x192",
+          "type": "image/jpeg"
+        }
+      ]
+    }
+  ],
+  "prefer_related_applications": false,
+  "share_target": {
+    "action": "/share",
+    "method": "POST",
+    "enctype": "multipart/form-data",
+    "params": {
+      "title": "title",
+      "text": "text",
+      "url": "url"
+    }
+  }
+}
