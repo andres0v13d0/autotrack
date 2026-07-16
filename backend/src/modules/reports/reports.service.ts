@@ -123,7 +123,7 @@ export class ReportsService {
   }
 
   async getWorkOrdersStatus(userId: string) {
-    const statuses = ['new', 'in_progress', 'ready', 'delivered'];
+    const statuses = ['new', 'in_progress', 'ready', 'picked_up'];
     const statusData: Array<{ status: string; count: number }> = [];
 
     for (const status of statuses) {
@@ -137,7 +137,7 @@ export class ReportsService {
         new: 'New',
         in_progress: 'In Progress',
         ready: 'Ready',
-        delivered: 'Delivered',
+        picked_up: 'Picked Up',
       };
 
       statusData.push({

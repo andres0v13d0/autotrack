@@ -1,7 +1,7 @@
 export type WorkOrderItemType = 'part' | 'labor';
 export type PaymentMethod = 'cash' | 'card' | 'zelle' | 'check' | 'other';
 export type PaymentStatus = 'pending' | 'partial' | 'paid';
-export type DeliveryStatus = 'new' | 'in_progress' | 'ready' | 'delivered';
+export type DeliveryStatus = 'new' | 'in_progress' | 'ready' | 'picked_up';
 
 export interface Vehicle {
   id: string;

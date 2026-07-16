@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Search, X, ChevronDown, Circle, Clock, CheckCircle2, AlertCircle, Check } from 'lucide-react';
 
 interface WorkOrderFiltersProps {
-  deliveryStatus: 'all' | 'new' | 'in_progress' | 'ready' | 'delivered';
+  deliveryStatus: 'all' | 'new' | 'in_progress' | 'ready' | 'picked_up';
   paymentStatus: 'all' | 'pending' | 'partial' | 'paid';
   onDeliveryStatusChange: (status: any) => void;
   onPaymentStatusChange: (status: any) => void;
@@ -15,7 +15,7 @@ const DELIVERY_STATUSES = [
   { value: 'new', label: 'New', icon: Circle, color: 'text-slate-400', bgColor: 'bg-white border-2 border-slate-900' },
   { value: 'in_progress', label: 'In Progress', icon: Clock, color: 'text-orange-500', bgColor: 'bg-orange-50' },
   { value: 'ready', label: 'Ready', icon: CheckCircle2, color: 'text-blue-500', bgColor: 'bg-blue-50' },
-  { value: 'delivered', label: 'Delivered', icon: Check, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
+  { value: 'picked_up', label: 'Picked Up', icon: Check, color: 'text-emerald-500', bgColor: 'bg-emerald-50' },
 ];
 
 const PAYMENT_STATUSES = [

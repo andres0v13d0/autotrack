@@ -31,10 +31,10 @@ export default function WorkOrders() {
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showIntakeForm, setShowIntakeForm] = useState(false);
   const [selectedWorkOrderId, setSelectedWorkOrderId] = useState<string | null>(null);
-  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<'new' | 'in_progress' | 'ready' | 'delivered' | 'all'>('all');
+  const [deliveryStatusFilter, setDeliveryStatusFilter] = useState<'new' | 'in_progress' | 'ready' | 'picked_up' | 'all'>('all');
   const [paymentStatusFilter, setPaymentStatusFilter] = useState<'pending' | 'partial' | 'paid' | 'all'>('all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'delivered'>('new');
+  const [modalDeliveryStatus, setModalDeliveryStatus] = useState<'new' | 'in_progress' | 'ready' | 'picked_up'>('new');
   const [editingItems, setEditingItems] = useState<Record<string, { price: string; qty: string }>>({});
   const [amountToPay, setAmountToPay] = useState<string>('');
   const [taxRate, setTaxRate] = useState<string>('0');
@@ -179,7 +179,7 @@ export default function WorkOrders() {
           case 'ready':
             icon = <CheckCircle2 {...iconProps} className="text-blue-500" />;
             break;
-          case 'delivered':
+          case 'picked_up':
             icon = <Check {...iconProps} className="text-emerald-500" />;
             break;
           default:
@@ -360,7 +360,7 @@ export default function WorkOrders() {
                   <option value="new">New</option>
                   <option value="in_progress">In Progress</option>
                   <option value="ready">Ready</option>
-                  <option value="delivered">Delivered</option>
+                  <option value="picked_up">Picked Up</option>
                 </select>
               </div>
             </div>

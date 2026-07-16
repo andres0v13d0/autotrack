@@ -42,7 +42,7 @@ export class WorkOrder {
   total: number;
 
   @Column({ type: 'varchar', default: 'new' })
-  delivery_status: 'new' | 'in_progress' | 'ready' | 'delivered';
+  delivery_status: 'new' | 'in_progress' | 'ready' | 'picked_up';
 
   @Column({ type: 'int', nullable: true })
   order_number: number;

@@ -63,45 +63,47 @@ export class WorkOrdersService {
   }
 
   async findAll(userId?: string): Promise<WorkOrder[]> {
-    const query = this.workOrdersRepo.createQueryBuilder('wo')
-      .leftJoinAndSelect('wo.items', 'items')
-      .leftJoinAndSelect('wo.vehicle', 'vehicle')
-      .leftJoinAndSelect('vehicle.customer', 'customer');
-    
-    if (userId) {
-      query.where('wo.created_by_id = :userId', { userId });
+    if (!userId) {
+      throw new Error('userId is required');
     }
     
-    return query.orderBy('wo.created_at', 'DESC').getMany();
-  }
-
-  async findByVehicle(vehicleId: string, userId?: string): Promise<WorkOrder[]> {
-    const query = this.workOrdersRepo.createQueryBuilder('wo')
-      .where('wo.vehicle_id = :vehicleId', { vehicleId })
-      .leftJoinAndSelect('wo.items', 'items')
-      .leftJoinAndSelect('wo.vehicle', 'vehicle')
-      .leftJoinAndSelect('vehicle.customer', 'customer');
-    
-    if (userId) {
-      query.andWhere('wo.created_by_id = :userId', { userId });
-    }
-    
-    return query.orderBy('wo.created_at', 'DESC').getMany();
-  }
-
-  async findOne(id: string, userId?: string): Promise<WorkOrder> {
-    const query = this.workOrdersRepo.createQueryBuilder('wo')
-      .where('wo.id = :id', { id })
+    return this.workOrdersRepo.createQueryBuilder('wo')
       .leftJoinAndSelect('wo.items', 'items')
       .leftJoinAndSelect('wo.vehicle', 'vehicle')
       .leftJoinAndSelect('vehicle.customer', 'customer')
-      .leftJoinAndSelect('wo.created_by', 'created_by');
-    
-    if (userId) {
-      query.andWhere('wo.created_by_id = :userId', { userId });
+      .where('wo.created_by_id = :userId', { userId })
+      .orderBy('wo.created_at', 'DESC')
+      .getMany();
+  }
+
+  async findByVehicle(vehicleId: string, userId?: string): Promise<WorkOrder[]> {
+    if (!userId) {
+      throw new Error('userId is required');
     }
     
-    const order = await query.getOne();
+    return this.workOrdersRepo.createQueryBuilder('wo')
+      .where('wo.vehicle_id = :vehicleId', { vehicleId })
+      .andWhere('wo.created_by_id = :userId', { userId })
+      .leftJoinAndSelect('wo.items', 'items')
+      .leftJoinAndSelect('wo.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.customer', 'customer')
+      .orderBy('wo.created_at', 'DESC')
+      .getMany();
+  }
+
+  async findOne(id: string, userId?: string): Promise<WorkOrder> {
+    if (!userId) {
+      throw new Error('userId is required');
+    }
+    
+    const order = await this.workOrdersRepo.createQueryBuilder('wo')
+      .where('wo.id = :id', { id })
+      .andWhere('wo.created_by_id = :userId', { userId })
+      .leftJoinAndSelect('wo.items', 'items')
+      .leftJoinAndSelect('wo.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.customer', 'customer')
+      .leftJoinAndSelect('wo.created_by', 'created_by')
+      .getOne();
 
     if (!order) {
       throw new NotFoundException(`Work order ${id} not found`);
@@ -168,8 +170,12 @@ export class WorkOrdersService {
   private async recalculateOrder(workOrderId: string, userId?: string): Promise<WorkOrder> {
     console.log('🔄 Recalculating order:', workOrderId);
     
+    if (!userId) {
+      throw new Error('userId is required');
+    }
+    
     const order = await this.workOrdersRepo.findOne({
-      where: { id: workOrderId },
+      where: { id: workOrderId, created_by_id: userId },
       relations: {
         items: true,
       },
@@ -178,11 +184,6 @@ export class WorkOrdersService {
     console.log('📦 Order items loaded:', order?.items?.length || 0, 'items');
 
     if (!order) {
-      throw new NotFoundException(`Work order ${workOrderId} not found`);
-    }
-
-    // Verify user ownership if userId provided
-    if (userId && order.created_by_id !== userId) {
       throw new NotFoundException(`Work order ${workOrderId} not found`);
     }
 
