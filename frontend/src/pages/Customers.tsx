@@ -292,7 +292,25 @@ export default function Customers() {
                   <input {...customerForm.register('name')} className={`${inputCls(!!customerForm.formState.errors.name)} text-base px-4 py-3 rounded-lg`} placeholder="John Doe" />
                 </Field>
                 <Field label="Phone Number" error={customerForm.formState.errors.phone?.message}>
-                  <input {...customerForm.register('phone')} className={`${inputCls(!!customerForm.formState.errors.phone)} text-base px-4 py-3 rounded-lg`} placeholder="(305) 555-1234" />
+                  <input 
+                    {...customerForm.register('phone')} 
+                    className={`${inputCls(!!customerForm.formState.errors.phone)} text-base px-4 py-3 rounded-lg`} 
+                    placeholder="(305) 555-1234"
+                    onChange={(e) => {
+                      // Format phone number as user types
+                      let value = e.target.value.replace(/\D/g, '');
+                      if (value.length > 0) {
+                        if (value.length <= 3) {
+                          value = `(${value}`;
+                        } else if (value.length <= 6) {
+                          value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+                        } else {
+                          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)} ${value.slice(6, 10)}`;
+                        }
+                      }
+                      customerForm.setValue('phone', value);
+                    }}
+                  />
                 </Field>
               </div>
             </div>
@@ -447,11 +465,13 @@ export default function Customers() {
                     </Field>
                     <button
                       type="button"
-                      onClick={() => {
-                        vehicleForm.handleSubmit((data) => {
+                      onClick={async () => {
+                        const isValid = await vehicleForm.trigger();
+                        if (isValid) {
+                          const data = vehicleForm.getValues();
                           setVehiclesToAdd([...vehiclesToAdd, data]);
-                          vehicleForm.reset();
-                        })();
+                          vehicleForm.reset({ plate: '', model: '', description: '' });
+                        }
                       }}
                       className="w-full px-4 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#f97316' }}
