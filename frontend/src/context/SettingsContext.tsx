@@ -17,6 +17,7 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
     queryFn: () => settingsService.getSettings(),
     staleTime: 1000 * 60 * 5, // 5 minutes
     gcTime: 1000 * 60 * 10, // 10 minutes
+    retry: false, // Don't retry on 401/403
   });
 
   return (

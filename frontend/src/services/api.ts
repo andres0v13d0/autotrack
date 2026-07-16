@@ -13,14 +13,15 @@ api.interceptors.request.use((config) => {
   return config;
 });
 
-// Redirect to /login on 401
+// Handle 401 errors — reject without auto-redirect (let components handle it)
 api.interceptors.response.use(
   (res) => res,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('access_token');
       localStorage.removeItem('auth_user');
-      window.location.href = '/login';
+      // Don't redirect here — let React Router handle navigation
+      // This prevents loops when SettingsProvider fails on /login
     }
     return Promise.reject(error);
   },
