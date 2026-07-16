@@ -42,11 +42,17 @@ export class WorkOrdersController {
 
   @Get()
   findAll(@Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.workOrdersService.findAll(req.user.id);
   }
 
   @Get('vehicle/:vehicleId')
   findByVehicle(@Param('vehicleId') vehicleId: string, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.workOrdersService.findByVehicle(vehicleId, req.user.id);
   }
 

@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
@@ -64,7 +64,7 @@ export class WorkOrdersService {
 
   async findAll(userId?: string): Promise<WorkOrder[]> {
     if (!userId) {
-      throw new Error('userId is required');
+      throw new BadRequestException('userId is required');
     }
     
     return this.workOrdersRepo.createQueryBuilder('wo')
@@ -78,7 +78,7 @@ export class WorkOrdersService {
 
   async findByVehicle(vehicleId: string, userId?: string): Promise<WorkOrder[]> {
     if (!userId) {
-      throw new Error('userId is required');
+      throw new BadRequestException('userId is required');
     }
     
     return this.workOrdersRepo.createQueryBuilder('wo')
@@ -93,7 +93,7 @@ export class WorkOrdersService {
 
   async findOne(id: string, userId?: string): Promise<WorkOrder> {
     if (!userId) {
-      throw new Error('userId is required');
+      throw new BadRequestException('userId is required');
     }
     
     const order = await this.workOrdersRepo.createQueryBuilder('wo')
@@ -171,7 +171,7 @@ export class WorkOrdersService {
     console.log('🔄 Recalculating order:', workOrderId);
     
     if (!userId) {
-      throw new Error('userId is required');
+      throw new BadRequestException('userId is required');
     }
     
     const order = await this.workOrdersRepo.findOne({
