@@ -63,30 +63,13 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Force cache busting for Safari
-      const now = new Date().getTime();
-      const cacheKey = 'autotrack-version-' + Math.floor(now / 60000); // Change every minute
-      sessionStorage.setItem(cacheKey, 'true');
-      
-      // Service Worker Registration with update check
+      // Service Worker Registration
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js?v=' + now).then(
-            registration => {
-              console.log('✅ SW registered:', registration);
-              // Check for updates every 5 seconds
-              setInterval(() => {
-                registration.update();
-              }, 5000);
-            },
+          navigator.serviceWorker.register('/sw.js').then(
+            registration => console.log('✅ SW registered'),
             error => console.log('❌ SW registration failed:', error)
           );
-        });
-        
-        // Listen for controller change
-        navigator.serviceWorker.addEventListener('controllerchange', () => {
-          console.log('🔄 Controller changed - new SW activated');
-          window.location.reload();
         });
       }
     </script>
