@@ -318,7 +318,7 @@ export default function Customers() {
       )}
 
       {showCreateModal && (
-        <Modal title={editingCustomer ? '✏️ Edit Customer' : '➕ New Customer'} onClose={() => { setShowCreateModal(false); setVehiclesToAdd([]); }} size="lg">
+        <Modal title={editingCustomer ? 'Edit Customer' : 'New Customer'} onClose={() => { setShowCreateModal(false); setVehiclesToAdd([]); }} size="lg">
           <form onSubmit={customerForm.handleSubmit((data) => createCustomerMutation.mutate(data))} className="space-y-6">
             {/* Customer Info Section */}
             <div>
@@ -341,7 +341,7 @@ export default function Customers() {
                         } else if (value.length <= 6) {
                           value = `(${value.slice(0, 3)}) ${value.slice(3)}`;
                         } else {
-                          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)} ${value.slice(6, 10)}`;
+                          value = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6, 10)}`;
                         }
                       }
                       customerForm.setValue('phone', value);
@@ -369,39 +369,39 @@ export default function Customers() {
                 {editingCustomer && existingVehicles.length > 0 && (
                   <div className="mb-4">
                     <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Registered Vehicles</p>
-                    <div className="space-y-2">
+                    <div className="grid grid-cols-2 gap-3">
                       {existingVehicles.map((vehicle) => (
-                        <div key={vehicle.id} className="flex items-center justify-between bg-gradient-to-r from-green-50 to-green-100 p-3 rounded-lg border-l-4 border-green-400">
-                          <div className="flex items-center gap-3 flex-1">
-                            <Truck size={16} style={{ color: '#10b981' }} className="flex-shrink-0" />
-                            <div>
-                              <p className="font-semibold text-sm" style={{ color: '#0f1f3d' }}>{vehicle.plate}</p>
-                              <p className="text-xs text-gray-600">{vehicle.model}</p>
-                              {vehicle.description && <p className="text-xs text-gray-500 italic mt-1">{vehicle.description}</p>}
+                        <div key={vehicle.id} className="bg-gradient-to-br from-green-50 to-green-100 p-4 rounded-lg border-l-4 border-green-400">
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex items-center gap-2">
+                              <Truck size={16} style={{ color: '#10b981' }} />
+                              <p className="font-bold text-sm" style={{ color: '#0f1f3d' }}>{vehicle.plate}</p>
+                            </div>
+                            <div className="flex items-center gap-1">
+                              <button
+                                type="button"
+                                onClick={() => setEditingVehicle(editingVehicle?.id === vehicle.id ? null : vehicle)}
+                                className="p-1.5 rounded hover:bg-green-200 transition-colors cursor-pointer"
+                                title={editingVehicle?.id === vehicle.id ? 'Close' : 'Edit'}
+                              >
+                                {editingVehicle?.id === vehicle.id ? (
+                                  <X size={14} style={{ color: '#ef4444' }} />
+                                ) : (
+                                  <Edit2 size={14} style={{ color: '#10b981' }} />
+                                )}
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setExistingVehicles(existingVehicles.filter(v => v.id !== vehicle.id))}
+                                className="text-xl text-red-500 hover:text-red-700 transition-colors cursor-pointer font-light leading-none"
+                                title="Delete"
+                              >
+                                ×
+                              </button>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <button
-                              type="button"
-                              onClick={() => setEditingVehicle(editingVehicle?.id === vehicle.id ? null : vehicle)}
-                              className="p-2 rounded hover:bg-green-200 transition-colors cursor-pointer"
-                              title={editingVehicle?.id === vehicle.id ? 'Close' : 'Edit'}
-                            >
-                              {editingVehicle?.id === vehicle.id ? (
-                                <X size={16} style={{ color: '#ef4444' }} />
-                              ) : (
-                                <Edit2 size={16} style={{ color: '#10b981' }} />
-                              )}
-                            </button>
-                            <button
-                              type="button"
-                              onClick={() => setExistingVehicles(existingVehicles.filter(v => v.id !== vehicle.id))}
-                              className="text-2xl text-red-500 hover:text-red-700 transition-colors cursor-pointer font-light leading-none"
-                              title="Delete"
-                            >
-                              ×
-                            </button>
-                          </div>
+                          <p className="text-xs text-gray-600 mb-2">{vehicle.model}</p>
+                          {vehicle.description && <p className="text-xs text-gray-500 italic">{vehicle.description}</p>}
                         </div>
                       ))}
                     </div>
@@ -409,7 +409,7 @@ export default function Customers() {
                 )}
 
                 {/* Add vehicle form OR Edit form */}
-                {editingVehicle && editingCustomer ? (
+                {editingVehicle ? (
                   <div className="bg-orange-50 border-2 border-orange-200 rounded-lg p-5 space-y-4">
                     <div className="flex items-center justify-between mb-2">
                       <p className="text-sm font-semibold text-orange-900 uppercase tracking-wide">Edit {editingVehicle.plate}</p>
@@ -427,11 +427,7 @@ export default function Customers() {
                         <input
                           type="text"
                           value={editingVehicle.plate}
-                          onChange={(e) => {
-                            const updated = { ...editingVehicle, plate: e.target.value };
-                            setEditingVehicle(updated);
-                            setExistingVehicles(existingVehicles.map(v => v.id === editingVehicle.id ? updated : v));
-                          }}
+                          onChange={(e) => setEditingVehicle({ ...editingVehicle, plate: e.target.value })}
                           className="text-sm px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="ABC-1234"
                         />
@@ -440,11 +436,7 @@ export default function Customers() {
                         <input
                           type="text"
                           value={editingVehicle.model}
-                          onChange={(e) => {
-                            const updated = { ...editingVehicle, model: e.target.value };
-                            setEditingVehicle(updated);
-                            setExistingVehicles(existingVehicles.map(v => v.id === editingVehicle.id ? updated : v));
-                          }}
+                          onChange={(e) => setEditingVehicle({ ...editingVehicle, model: e.target.value })}
                           className="text-sm px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500"
                           placeholder="2020 Toyota Camry"
                         />
@@ -454,18 +446,27 @@ export default function Customers() {
                       <input
                         type="text"
                         value={editingVehicle.description || ''}
-                        onChange={(e) => {
-                          const updated = { ...editingVehicle, description: e.target.value };
-                          setEditingVehicle(updated);
-                          setExistingVehicles(existingVehicles.map(v => v.id === editingVehicle.id ? updated : v));
-                        }}
+                        onChange={(e) => setEditingVehicle({ ...editingVehicle, description: e.target.value })}
                         className="text-sm px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-orange-500 w-full"
                         placeholder="e.g., Red, has dent on left side"
                       />
                     </Field>
                     <button
                       type="button"
-                      onClick={() => setEditingVehicle(null)}
+                      onClick={() => {
+                        if (editingVehicle.id?.toString().startsWith('new-')) {
+                          // It's a new vehicle being edited
+                          const index = parseInt(editingVehicle.id.split('-')[1]);
+                          const updatedVehicle = { plate: editingVehicle.plate, model: editingVehicle.model, description: editingVehicle.description };
+                          const newList = [...vehiclesToAdd];
+                          newList[index] = updatedVehicle;
+                          setVehiclesToAdd(newList);
+                        } else {
+                          // It's an existing vehicle being edited
+                          setExistingVehicles(existingVehicles.map(v => v.id === editingVehicle.id ? editingVehicle : v));
+                        }
+                        setEditingVehicle(null);
+                      }}
                       className="w-full px-3 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
                       style={{ backgroundColor: '#10b981' }}
                     >
@@ -474,48 +475,93 @@ export default function Customers() {
                     </button>
                   </div>
                 ) : (
-                  <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5 space-y-4">
-                    <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">Add a new vehicle</p>
-                    <div className="grid grid-cols-2 gap-3">
-                      <Field label="License Plate" error={vehicleForm.formState.errors.plate?.message}>
+                  <>
+                    {/* New Vehicles List */}
+                    {vehiclesToAdd.length > 0 && (
+                      <div className="mb-4">
+                        <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-2">New Vehicles to Add</p>
+                        <div className="grid grid-cols-2 gap-3">
+                          {vehiclesToAdd.map((vehicle, index) => (
+                            <div key={index} className="bg-gradient-to-br from-blue-50 to-blue-100 p-4 rounded-lg border-l-4 border-blue-400">
+                              <div className="flex items-start justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                  <Truck size={16} style={{ color: '#3b82f6' }} />
+                                  <p className="font-bold text-sm" style={{ color: '#0f1f3d' }}>{vehicle.plate}</p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setEditingVehicle({ ...vehicle, id: `new-${index}` });
+                                      setVehiclesToAdd(vehiclesToAdd.filter((_, i) => i !== index));
+                                    }}
+                                    className="p-1.5 rounded hover:bg-blue-200 transition-colors cursor-pointer"
+                                    title="Edit"
+                                  >
+                                    <Edit2 size={14} style={{ color: '#3b82f6' }} />
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => setVehiclesToAdd(vehiclesToAdd.filter((_, i) => i !== index))}
+                                    className="text-xl text-red-500 hover:text-red-700 transition-colors cursor-pointer font-light leading-none"
+                                    title="Remove"
+                                  >
+                                    ×
+                                  </button>
+                                </div>
+                              </div>
+                              <p className="text-xs text-gray-600 mb-2">{vehicle.model}</p>
+                              {vehicle.description && <p className="text-xs text-gray-500 italic">{vehicle.description}</p>}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Add vehicle form */}
+                    <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-5 space-y-4">
+                      <p className="text-xs font-semibold text-blue-900 uppercase tracking-wide">Add a new vehicle</p>
+                      <div className="grid grid-cols-2 gap-3">
+                        <Field label="License Plate" error={vehicleForm.formState.errors.plate?.message}>
+                          <input
+                            {...vehicleForm.register('plate')}
+                            className={`${inputCls(!!vehicleForm.formState.errors.plate)} text-sm px-3 py-2 rounded-lg`}
+                            placeholder="ABC-1234"
+                          />
+                        </Field>
+                        <Field label="Model" error={vehicleForm.formState.errors.model?.message}>
+                          <input
+                            {...vehicleForm.register('model')}
+                            className={`${inputCls(!!vehicleForm.formState.errors.model)} text-sm px-3 py-2 rounded-lg`}
+                            placeholder="2020 Toyota Camry"
+                          />
+                        </Field>
+                      </div>
+                      <Field label="Description (optional)" error={vehicleForm.formState.errors.description?.message}>
                         <input
-                          {...vehicleForm.register('plate')}
-                          className={`${inputCls(!!vehicleForm.formState.errors.plate)} text-sm px-3 py-2 rounded-lg`}
-                          placeholder="ABC-1234"
+                          {...vehicleForm.register('description')}
+                          className={inputCls(!!vehicleForm.formState.errors.description)}
+                          placeholder="e.g., Red, has dent on left side"
                         />
                       </Field>
-                      <Field label="Model" error={vehicleForm.formState.errors.model?.message}>
-                        <input
-                          {...vehicleForm.register('model')}
-                          className={`${inputCls(!!vehicleForm.formState.errors.model)} text-sm px-3 py-2 rounded-lg`}
-                          placeholder="2020 Toyota Camry"
-                        />
-                      </Field>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          const isValid = await vehicleForm.trigger();
+                          if (isValid) {
+                            const data = vehicleForm.getValues();
+                            setVehiclesToAdd([...vehiclesToAdd, data]);
+                            vehicleForm.reset({ plate: '', model: '', description: '' });
+                          }
+                        }}
+                        className="w-full px-4 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
+                        style={{ backgroundColor: '#f97316' }}
+                      >
+                        <Plus size={16} />
+                        Add Vehicle
+                      </button>
                     </div>
-                    <Field label="Description (optional)" error={vehicleForm.formState.errors.description?.message}>
-                      <input
-                        {...vehicleForm.register('description')}
-                        className={inputCls(!!vehicleForm.formState.errors.description)}
-                        placeholder="e.g., Red, has dent on left side"
-                      />
-                    </Field>
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        const isValid = await vehicleForm.trigger();
-                        if (isValid) {
-                          const data = vehicleForm.getValues();
-                          setVehiclesToAdd([...vehiclesToAdd, data]);
-                          vehicleForm.reset({ plate: '', model: '', description: '' });
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 transition-opacity inline-flex items-center justify-center gap-2"
-                      style={{ backgroundColor: '#f97316' }}
-                    >
-                      <Plus size={16} />
-                      Add Vehicle
-                    </button>
-                  </div>
+                  </>
                 )}
               </div>
 
