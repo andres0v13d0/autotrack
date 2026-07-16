@@ -148,6 +148,15 @@ export default function WorkOrders() {
     },
   });
 
+  const updateDeliveryStatusMutation = useMutation({
+    mutationFn: (status: 'new' | 'in_progress' | 'ready' | 'picked_up') =>
+      selectedWorkOrderId ? workOrdersService.update(selectedWorkOrderId, { delivery_status: status }) : Promise.reject('No work order selected'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+      qc.invalidateQueries({ queryKey: ['workOrders'] });
+    },
+  });
+
   const handleStartEditDescription = () => {
     setDescriptionInput(selectedOrder?.description_needed || '');
     setEditingDescription(true);
@@ -169,11 +178,12 @@ export default function WorkOrders() {
     setShowDetailModal(true);
   };
 
-  // Load tax rate from selected order
+  // Load tax rate and delivery status from selected order
   React.useEffect(() => {
     if (selectedOrder && showDetailModal) {
       const taxRateValue = selectedOrder.tax_rate ? selectedOrder.tax_rate * 100 : 0;
       setTaxRate(String(taxRateValue.toFixed(2)));
+      setModalDeliveryStatus(selectedOrder.delivery_status || 'new');
       setAmountToPay('');
     }
   }, [selectedOrder, showDetailModal]);
@@ -390,8 +400,13 @@ export default function WorkOrders() {
                 <p className="text-xs text-gray-500 font-semibold uppercase tracking-wide">Delivery Status</p>
                 <select 
                   value={modalDeliveryStatus} 
-                  onChange={(e) => setModalDeliveryStatus(e.target.value as any)}
-                  className="text-xs font-semibold px-3 py-2 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-colors w-full"
+                  onChange={(e) => {
+                    const newStatus = e.target.value as 'new' | 'in_progress' | 'ready' | 'picked_up';
+                    setModalDeliveryStatus(newStatus);
+                    updateDeliveryStatusMutation.mutate(newStatus);
+                  }}
+                  disabled={updateDeliveryStatusMutation.isPending}
+                  className="text-xs font-semibold px-3 py-2 rounded-lg border-2 border-slate-200 bg-white hover:border-slate-300 transition-colors w-full disabled:opacity-60 cursor-pointer"
                 >
                   <option value="new">New</option>
                   <option value="in_progress">In Progress</option>
