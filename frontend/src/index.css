@@ -6,3 +6,23 @@
   --color-brand-orange: #f97316;
   --color-brand-orange-dark: #ea6c0a;
 }
+
+/* Global input font size fix for iOS Safari auto-zoom */
+input,
+textarea,
+select,
+button {
+  font-size: 16px;
+}
+
+/* Ensure all form elements have minimum 16px */
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="tel"],
+input[type="url"],
+input[type="number"],
+textarea {
+  font-size: 16px !important;
+}

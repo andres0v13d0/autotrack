@@ -141,26 +141,28 @@ export default function Settings() {
 
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
           {/* Tabs */}
-          <div className="flex border-b border-gray-200 bg-gray-50">
-            {tabs.map((tab) => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-center text-sm font-medium transition-all ${
-                  activeTab === tab.id
-                    ? 'border-b-2 text-white'
-                    : 'text-gray-600 hover:text-gray-800'
-                }`}
-                style={{
-                  borderBottomColor: activeTab === tab.id ? '#f97316' : 'transparent',
-                  backgroundColor: activeTab === tab.id ? 'rgba(249, 115, 22, 0.05)' : 'transparent',
-                  color: activeTab === tab.id ? '#0f1f3d' : undefined,
-                }}
-              >
-                {tab.icon}
-                {tab.label}
-              </button>
-            ))}
+          <div className="overflow-x-auto">
+            <div className="flex border-b border-gray-200 bg-gray-50">
+              {tabs.map((tab) => (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex-1 flex items-center justify-center gap-2 px-4 py-4 text-center text-sm font-medium transition-all whitespace-nowrap ${
+                    activeTab === tab.id
+                      ? 'border-b-2 text-white'
+                      : 'text-gray-600 hover:text-gray-800'
+                  }`}
+                  style={{
+                    borderBottomColor: activeTab === tab.id ? '#f97316' : 'transparent',
+                    backgroundColor: activeTab === tab.id ? 'rgba(249, 115, 22, 0.05)' : 'transparent',
+                    color: activeTab === tab.id ? '#0f1f3d' : undefined,
+                  }}
+                >
+                  {tab.icon}
+                  {tab.label}
+                </button>
+              ))}
+            </div>
           </div>
 
           {/* Tab Content */}
