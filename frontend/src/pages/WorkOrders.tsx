@@ -362,13 +362,13 @@ export default function WorkOrders() {
               <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Items</h2>
               <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
                 <div className="min-w-full">
-                  <table className="w-full text-sm">
+                  <table className="w-full text-sm md:text-sm text-xs">
                     <thead>
                       <tr style={{ backgroundColor: '#f3f4f6' }}>
-                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.description')}</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.price')}</th>
-                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.qty')}</th>
-                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.lineTotal')}</th>
+                        <th className="px-4 py-3 text-left text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.description')}</th>
+                        <th className="px-4 py-3 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.price')}</th>
+                        <th className="px-4 py-3 text-center text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.qty')}</th>
+                        <th className="px-4 py-3 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.lineTotal')}</th>
                         {selectedOrder.items.length > 0 && <th className="px-4 py-3"></th>}
                       </tr>
                     </thead>
@@ -386,7 +386,7 @@ export default function WorkOrders() {
                               <input 
                                 type="text"
                                 defaultValue={item.name}
-                                className="text-xs w-full px-2 py-1 border border-gray-300 rounded whitespace-nowrap"
+                                className="text-sm md:text-xs w-40 md:w-full px-3 py-2 md:py-1 border border-gray-300 rounded whitespace-nowrap"
                                 readOnly
                               />
                             </td>
@@ -396,7 +396,7 @@ export default function WorkOrders() {
                                 step="0.01"
                                 value={edited?.price ?? (typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2))}
                                 onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, price: e.target.value } })}
-                                className="text-xs w-24 px-2 py-1 border border-gray-300 rounded text-right"
+                                className="text-sm md:text-xs w-32 md:w-24 px-3 py-2 md:py-1 border border-gray-300 rounded text-right"
                               />
                             </td>
                             <td className="px-4 py-3">
@@ -405,11 +405,11 @@ export default function WorkOrders() {
                                 min="1"
                                 value={edited?.qty ?? item.qty}
                                 onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, qty: e.target.value } })}
-                                className="text-xs w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                                className="text-sm md:text-xs w-20 md:w-16 px-3 py-2 md:py-1 border border-gray-300 rounded text-center"
                               />
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <div className="text-xs font-bold text-gray-900 whitespace-nowrap">
+                              <div className="text-sm md:text-xs font-bold text-gray-900 whitespace-nowrap">
                                 ${lineTotal}
                               </div>
                             </td>
@@ -436,7 +436,7 @@ export default function WorkOrders() {
                             <td className="px-4 py-3">
                               <input 
                                 {...registerItem('name')} 
-                                className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
+                                className={`${inputCls(!!itemErrors.name)} text-sm md:text-xs w-40 md:w-full py-2 md:py-1`} 
                                 placeholder="Description" 
                               />
                             </td>
@@ -446,7 +446,7 @@ export default function WorkOrders() {
                                 type="number" 
                                 step="0.01" 
                                 min="0.01" 
-                                className={`${inputCls(!!itemErrors.price)} text-xs w-24`} 
+                                className={`${inputCls(!!itemErrors.price)} text-sm md:text-xs w-32 md:w-24 py-2 md:py-1`} 
                                 placeholder="0.00" 
                               />
                             </td>
@@ -455,12 +455,12 @@ export default function WorkOrders() {
                                 {...registerItem('qty')} 
                                 type="number" 
                                 min="1" 
-                                className={`${inputCls(!!itemErrors.qty)} text-xs w-16`} 
+                                className={`${inputCls(!!itemErrors.qty)} text-sm md:text-xs w-20 md:w-16 py-2 md:py-1`} 
                                 placeholder="1" 
                               />
                             </td>
                             <td className="px-4 py-3 text-right">
-                              <div className="text-xs font-medium text-gray-900 whitespace-nowrap">
+                              <div className="text-sm md:text-xs font-medium text-gray-900 whitespace-nowrap">
                                 ${newLineTotal}
                               </div>
                             </td>
