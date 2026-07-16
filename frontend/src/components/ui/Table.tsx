@@ -1,4 +1,5 @@
 import React from 'react';
+import { TableSkeleton } from './Skeletons';
 
 export interface TableColumn<T> {
   key: string;
@@ -55,13 +56,7 @@ export default function Table<T extends Record<string, any>>({
   };
 
   if (isLoading) {
-    return (
-      <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 text-center">
-        <div className="flex justify-center">
-          <div className="w-8 h-8 rounded-full border-4 border-t-transparent animate-spin" style={{ borderColor: '#f97316', borderTopColor: 'transparent' }} />
-        </div>
-      </div>
-    );
+    return <TableSkeleton rows={8} />;
   }
 
   if (data.length === 0) {

@@ -10,6 +10,7 @@ import { createPortal } from 'react-dom';
 import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import Modal from '../components/ui/Modal';
+import { CustomersSkeleton, CustomerDetailSkeleton } from '../components/ui/Skeletons';
 import CreateWorkOrderModal from '../components/CreateWorkOrderModal';
 import { customersService } from '../services/customers.service';
 import { vehiclesService } from '../services/vehicles.service';
@@ -209,7 +210,7 @@ export default function Customers() {
         <input type="text" placeholder="Search by name, phone, or plate..." value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500" />
       </div>
 
-      {isLoading ? <div className="text-center py-12 text-gray-500">Loading...</div> : filteredCustomers.length === 0 ? <div className="text-center py-12 text-gray-500">No customers found</div> : (
+      {isLoading ? <CustomersSkeleton /> : filteredCustomers.length === 0 ? <div className="text-center py-12 text-gray-500">No customers found</div> : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredCustomers.map((customer) => (
             <div 
@@ -473,7 +474,7 @@ export default function Customers() {
 
       {showDetailModal && selectedCustomer && (
         <Modal title={`${selectedCustomer.name}`} onClose={() => { setShowDetailModal(false); setActiveDropdown(null); }} size="lg">
-          {loadingDetail ? <div className="text-center py-12 text-gray-500">Loading details...</div> : (
+          {loadingDetail ? <CustomerDetailSkeleton /> : (
             <div className="space-y-5">
               {/* Contact Card */}
               <div className="bg-white rounded-xl p-5 border-l-4" style={{ borderLeftColor: '#f97316' }}>
