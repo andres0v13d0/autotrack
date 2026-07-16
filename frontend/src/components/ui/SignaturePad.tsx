@@ -1,4 +1,4 @@
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
 import SignaturePadLib from 'signature_pad';
 
@@ -11,7 +11,6 @@ interface SignaturePadProps {
 export default function SignaturePad({ value, onChange, onClose }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const signaturePadRef = useRef<SignaturePadLib | null>(null);
-  const [isEmpty, setIsEmpty] = useState(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -31,14 +30,12 @@ export default function SignaturePad({ value, onChange, onClose }: SignaturePadP
 
     // Handle empty state changes
     canvas.addEventListener('endStroke', () => {
-      setIsEmpty(signaturePad.isEmpty());
       onChange(signaturePad.toDataURL('image/png'));
     });
 
     // Load existing signature if provided
     if (value) {
       signaturePad.fromDataURL(value, { ratio: window.devicePixelRatio || 1 });
-      setIsEmpty(false);
     }
 
     // Resize canvas to fit container
@@ -66,7 +63,6 @@ export default function SignaturePad({ value, onChange, onClose }: SignaturePadP
   const clearSignature = () => {
     if (signaturePadRef.current) {
       signaturePadRef.current.clear();
-      setIsEmpty(true);
       onChange('');
     }
   };
