@@ -40,6 +40,12 @@ export interface WorkOrder {
   delivery_status: DeliveryStatus;
   created_at: string;
   vehicle?: Vehicle;
+  intakeForm?: {
+    id: string;
+    mileage_in?: number;
+    client_name: string;
+    client_phone: string;
+  };
   // Derived fields (calculated on frontend from payments)
   amountPaid?: number;
   balanceDue?: number;

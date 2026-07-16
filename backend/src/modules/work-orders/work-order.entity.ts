@@ -5,6 +5,7 @@ import {
   CreateDateColumn,
   ManyToOne,
   OneToMany,
+  OneToOne,
   JoinColumn,
   Unique,
 } from 'typeorm';
@@ -12,6 +13,7 @@ import { Vehicle } from '../vehicles/vehicle.entity';
 import { User } from '../users/user.entity';
 import { WorkOrderItem } from './work-order-item.entity';
 import { Payment } from '../payments/payment.entity';
+import { IntakeForm } from './intake-form.entity';
 
 @Entity('work_orders')
 @Unique(['order_number', 'created_by_id'])
@@ -61,4 +63,7 @@ export class WorkOrder {
 
   @OneToMany(() => Payment, (payment) => payment.work_order)
   payments: Payment[];
+
+  @OneToOne(() => IntakeForm, (intakeForm) => intakeForm.workOrder)
+  intakeForm?: IntakeForm;
 }

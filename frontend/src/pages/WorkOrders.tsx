@@ -261,6 +261,17 @@ export default function WorkOrders() {
       },
     },
     {
+      key: 'intakeForm',
+      label: 'Mileage In',
+      width: '10%',
+      render: (_value: unknown, row: WorkOrder) => {
+        if (row.intakeForm?.mileage_in) {
+          return `${row.intakeForm.mileage_in.toLocaleString()} mi`;
+        }
+        return '—';
+      },
+    },
+    {
       key: 'total',
       label: 'Total',
       width: '12%',
@@ -338,6 +349,8 @@ export default function WorkOrders() {
             setSelectedWorkOrderId(null);
             resetItem();
             setAmountToPay('');
+            // Refresh work orders data from backend
+            qc.invalidateQueries({ queryKey: ['workOrders'] });
           }}
           size="xl"
           footer={
@@ -349,6 +362,8 @@ export default function WorkOrders() {
                   setSelectedWorkOrderId(null);
                   resetItem();
                   setAmountToPay('');
+                  // Refresh work orders data from backend
+                  qc.invalidateQueries({ queryKey: ['workOrders'] });
                 }}
                 className="px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors"
               >

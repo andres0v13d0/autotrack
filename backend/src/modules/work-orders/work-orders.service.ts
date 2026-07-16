@@ -94,6 +94,7 @@ export class WorkOrdersService {
       .leftJoinAndSelect('wo.items', 'items')
       .leftJoinAndSelect('wo.vehicle', 'vehicle')
       .leftJoinAndSelect('vehicle.customer', 'customer')
+      .leftJoinAndSelect('wo.intakeForm', 'intakeForm')
       .where('wo.created_by_id = :userId', { userId })
       .orderBy('wo.created_at', 'DESC')
       .getMany();
