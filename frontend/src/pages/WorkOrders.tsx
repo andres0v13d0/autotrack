@@ -137,9 +137,17 @@ export default function WorkOrders() {
 
   const handleViewOrder = (workOrderId: string) => {
     setSelectedWorkOrderId(workOrderId);
-    setTaxRate('0');
     setShowDetailModal(true);
   };
+
+  // Load tax rate from selected order
+  React.useEffect(() => {
+    if (selectedOrder && showDetailModal) {
+      const taxRateValue = selectedOrder.tax_rate ? selectedOrder.tax_rate * 100 : 0;
+      setTaxRate(String(taxRateValue.toFixed(2)));
+      setAmountToPay('');
+    }
+  }, [selectedOrder, showDetailModal]);
 
   // For now, just filter by delivery status since payment status requires additional queries
   const filteredWorkOrders = workOrders.filter(order => {
@@ -361,15 +369,15 @@ export default function WorkOrders() {
             <div>
               <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Items</h2>
               <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
-                <div className="min-w-full">
+                <div className="min-w-full" style={{ minWidth: '600px' }}>
                   <table className="w-full text-sm md:text-sm text-xs">
                     <thead>
                       <tr style={{ backgroundColor: '#f3f4f6' }}>
-                        <th className="px-4 py-3 text-left text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.description')}</th>
-                        <th className="px-4 py-3 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.price')}</th>
-                        <th className="px-4 py-3 text-center text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.qty')}</th>
-                        <th className="px-4 py-3 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.lineTotal')}</th>
-                        {selectedOrder.items.length > 0 && <th className="px-4 py-3"></th>}
+                        <th className="px-6 py-4 text-left text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.description')}</th>
+                        <th className="px-6 py-4 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.price')}</th>
+                        <th className="px-6 py-4 text-center text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.qty')}</th>
+                        <th className="px-6 py-4 text-right text-xs md:text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.lineTotal')}</th>
+                        <th className="px-6 py-4"></th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200">
@@ -382,7 +390,7 @@ export default function WorkOrders() {
 
                         return (
                           <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 type="text"
                                 defaultValue={item.name}
@@ -390,30 +398,30 @@ export default function WorkOrders() {
                                 readOnly
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 type="number"
                                 step="0.01"
                                 value={edited?.price ?? (typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2))}
                                 onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, price: e.target.value } })}
-                                className="text-sm md:text-xs w-32 md:w-24 px-3 py-2 md:py-1 border border-gray-300 rounded text-right"
+                                className="text-sm md:text-xs w-32 md:w-24 px-3 py-2 md:py-1 border border-gray-300 rounded text-right ml-auto block"
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 type="number"
                                 min="1"
                                 value={edited?.qty ?? item.qty}
                                 onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, qty: e.target.value } })}
-                                className="text-sm md:text-xs w-20 md:w-16 px-3 py-2 md:py-1 border border-gray-300 rounded text-center"
+                                className="text-sm md:text-xs w-20 md:w-16 px-3 py-2 md:py-1 border border-gray-300 rounded text-center ml-auto block"
                               />
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-6 py-4 text-right">
                               <div className="text-sm md:text-xs font-bold text-gray-900 whitespace-nowrap">
                                 ${lineTotal}
                               </div>
                             </td>
-                            <td className="px-4 py-3 text-center">
+                            <td className="px-6 py-4 text-center">
                               <button
                                 onClick={() => removeItemMutation.mutate(item.id)}
                                 className="text-lg text-red-600 hover:text-red-800 transition-colors cursor-pointer font-bold"
@@ -433,38 +441,38 @@ export default function WorkOrders() {
                         
                         return (
                           <tr className="bg-blue-50">
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 {...registerItem('name')} 
-                                className={`${inputCls(!!itemErrors.name)} text-sm md:text-xs w-40 md:w-full py-2 md:py-1`} 
+                                className={`${inputCls(!!itemErrors.name)} text-sm md:text-xs w-40 md:w-full py-2 md:py-1 px-3`} 
                                 placeholder="Description" 
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 {...registerItem('price')} 
                                 type="number" 
                                 step="0.01" 
                                 min="0.01" 
-                                className={`${inputCls(!!itemErrors.price)} text-sm md:text-xs w-32 md:w-24 py-2 md:py-1`} 
+                                className={`${inputCls(!!itemErrors.price)} text-sm md:text-xs w-32 md:w-24 py-2 md:py-1 px-3 text-right ml-auto block`} 
                                 placeholder="0.00" 
                               />
                             </td>
-                            <td className="px-4 py-3">
+                            <td className="px-6 py-4">
                               <input 
                                 {...registerItem('qty')} 
                                 type="number" 
                                 min="1" 
-                                className={`${inputCls(!!itemErrors.qty)} text-sm md:text-xs w-20 md:w-16 py-2 md:py-1`} 
+                                className={`${inputCls(!!itemErrors.qty)} text-sm md:text-xs w-20 md:w-16 py-2 md:py-1 px-3 text-center ml-auto block`} 
                                 placeholder="1" 
                               />
                             </td>
-                            <td className="px-4 py-3 text-right">
+                            <td className="px-6 py-4 text-right">
                               <div className="text-sm md:text-xs font-medium text-gray-900 whitespace-nowrap">
                                 ${newLineTotal}
                               </div>
                             </td>
-                            <td className="px-4 py-3"></td>
+                            <td className="px-6 py-4"></td>
                           </tr>
                         );
                       })()}
@@ -511,14 +519,38 @@ export default function WorkOrders() {
                       className="w-16 px-2 py-1 border border-gray-300 rounded text-xs"
                       value={taxRate}
                       onChange={(e) => setTaxRate(e.target.value)}
+                      onBlur={async () => {
+                        const taxValue = taxRate && taxRate !== '0' ? parseFloat(taxRate) / 100 : 0;
+                        try {
+                          await workOrdersService.update(selectedWorkOrderId!, { tax_rate: taxValue });
+                          qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+                        } catch (e) {
+                          console.error('Error updating tax rate:', e);
+                        }
+                      }}
                     />
                     <span className="text-xs text-gray-500">%</span>
                   </div>
-                  <span className="font-semibold text-gray-900">${typeof selectedOrder.tax === 'string' ? parseFloat(selectedOrder.tax).toFixed(2) : selectedOrder.tax.toFixed(2)}</span>
+                  <span className="font-semibold text-gray-900">
+                    ${(() => {
+                      const taxRateNum = (taxRate && taxRate !== '' && taxRate !== '0') ? parseFloat(taxRate) : 0;
+                      const subtotal = typeof selectedOrder.subtotal === 'string' ? parseFloat(selectedOrder.subtotal) : selectedOrder.subtotal;
+                      const taxAmount = taxRateNum > 0 ? (subtotal * taxRateNum) / 100 : 0;
+                      return isNaN(taxAmount) ? '0.00' : taxAmount.toFixed(2);
+                    })()}
+                  </span>
                 </div>
                 <div className="border-t-2 border-gray-300 pt-3 flex justify-between items-center font-bold">
                   <span style={{ color: '#0f1f3d' }}>Total Due</span>
-                  <span style={{ color: '#f97316' }} className="text-lg">${typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total).toFixed(2) : selectedOrder.total.toFixed(2)}</span>
+                  <span style={{ color: '#f97316' }} className="text-lg">
+                    ${(() => {
+                      const taxRateNum = (taxRate && taxRate !== '' && taxRate !== '0') ? parseFloat(taxRate) : 0;
+                      const subtotal = typeof selectedOrder.subtotal === 'string' ? parseFloat(selectedOrder.subtotal) : selectedOrder.subtotal;
+                      const taxAmount = taxRateNum > 0 ? (subtotal * taxRateNum) / 100 : 0;
+                      const total = subtotal + taxAmount;
+                      return isNaN(total) ? '0.00' : total.toFixed(2);
+                    })()}
+                  </span>
                 </div>
                 {balance && (
                   <>
