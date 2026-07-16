@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm } from 'react-hook-form';
-import { FileText, Plus } from 'lucide-react';
+import { FileText, Plus, Edit2, X, Save } from 'lucide-react';
 import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import IntakeFormModal from '../components/IntakeFormModal';
@@ -38,6 +38,8 @@ export default function WorkOrderDetail() {
   const [pdfToast, setPdfToast] = useState(false);
   const [showPaymentForm, setShowPaymentForm] = useState(false);
   const [showIntakeForm, setShowIntakeForm] = useState(false);
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionInput, setDescriptionInput] = useState('');
 
   const { register: registerItem, handleSubmit: handleItemSubmit, reset: resetItem, formState: { errors: itemErrors } } = useForm<ItemForm>({
     defaultValues: { qty: '1' },
@@ -66,6 +68,16 @@ export default function WorkOrderDetail() {
     qc.invalidateQueries({ queryKey: balanceKey });
     qc.invalidateQueries({ queryKey: ['work-orders', vehicleId] });
   };
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: (newDescription: string) =>
+      workOrdersService.updateDescription(workOrderId, newDescription),
+    onSuccess: () => {
+      invalidate();
+      setEditingDescription(false);
+      setDescriptionInput('');
+    },
+  });
 
   const addItemMutation = useMutation({
     mutationFn: (values: ItemForm) =>
@@ -96,6 +108,22 @@ export default function WorkOrderDetail() {
     } catch (error) {
       console.error('Failed to download PDF:', error);
     }
+  };
+
+  const handleStartEdit = () => {
+    setDescriptionInput(order?.description_needed || '');
+    setEditingDescription(true);
+  };
+
+  const handleSaveDescription = () => {
+    if (descriptionInput.trim()) {
+      updateDescriptionMutation.mutate(descriptionInput.trim());
+    }
+  };
+
+  const handleCancelEdit = () => {
+    setEditingDescription(false);
+    setDescriptionInput('');
   };
 
   if (isLoading || !order) {
@@ -144,7 +172,6 @@ export default function WorkOrderDetail() {
               {vehicle?.model}
             </h1>
           </div>
-          <p className="text-sm text-gray-500">{order.description_needed}</p>
         </div>
         <div className="flex items-center gap-3">
           <span className="px-3 py-1 rounded-lg text-xs font-semibold text-white" style={{ backgroundColor: '#0f1f3d' }}>
@@ -168,6 +195,60 @@ export default function WorkOrderDetail() {
             Intake Form
           </button>
         </div>
+      </div>
+
+      {/* Work Description Section */}
+      <div className="bg-blue-50 border-2 border-blue-200 rounded-2xl shadow-sm p-6 mb-6">
+        <div className="flex items-center justify-between gap-4 mb-3">
+          <h3 className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>
+            Work Description
+          </h3>
+          {!editingDescription && (
+            <button
+              onClick={handleStartEdit}
+              className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-600 hover:bg-orange-100 rounded transition-colors"
+            >
+              <Edit2 size={14} />
+              Edit
+            </button>
+          )}
+        </div>
+
+        {!editingDescription ? (
+          <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+            {order.description_needed || <span className="text-gray-400 italic">No description</span>}
+          </p>
+        ) : (
+          <div className="space-y-3">
+            <textarea
+              value={descriptionInput}
+              onChange={e => setDescriptionInput(e.target.value)}
+              className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none"
+              rows={4}
+              placeholder="Enter work description..."
+              disabled={updateDescriptionMutation.isPending}
+            />
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleCancelEdit}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                disabled={updateDescriptionMutation.isPending}
+              >
+                <X size={14} />
+                Cancel
+              </button>
+              <button
+                onClick={handleSaveDescription}
+                className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white rounded hover:opacity-90 transition-opacity disabled:opacity-60"
+                style={{ backgroundColor: '#f97316' }}
+                disabled={updateDescriptionMutation.isPending}
+              >
+                <Save size={14} />
+                {updateDescriptionMutation.isPending ? 'Saving...' : 'Save'}
+              </button>
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">

@@ -155,7 +155,7 @@ export class WorkOrdersService {
     return this.recalculateOrder(workOrderId, userId);
   }
 
-  async update(id: string, dto: { tax_rate?: number; delivery_status?: string }, userId?: string): Promise<WorkOrder> {
+  async update(id: string, dto: { tax_rate?: number; delivery_status?: string; description_needed?: string }, userId?: string): Promise<WorkOrder> {
     const order = await this.findOne(id, userId);
 
     if (dto.tax_rate !== undefined) {
@@ -166,6 +166,10 @@ export class WorkOrdersService {
 
     if (dto.delivery_status !== undefined) {
       order.delivery_status = dto.delivery_status as any;
+    }
+
+    if (dto.description_needed !== undefined) {
+      order.description_needed = dto.description_needed;
     }
 
     await this.workOrdersRepo.save(order);

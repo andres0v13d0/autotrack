@@ -171,7 +171,7 @@ export default function Layout({ children }: { children: ReactNode }) {
         {/* Main content area */}
         <div className="flex-1 flex flex-col">
           {/* Header */}
-          <header className="bg-slate-900 shadow-md sticky top-0 z-40">
+          <header className="bg-slate-900 shadow-md sticky top-0 z-40" style={{ paddingTop: 'max(0px, env(safe-area-inset-top))' }}>
             <div className="flex items-center justify-between px-4 lg:px-6 h-16">
               {/* Left: Hamburger (mobile) */}
               <div className="flex items-center">
@@ -318,7 +318,7 @@ export default function Layout({ children }: { children: ReactNode }) {
           )}
 
           {/* Content */}
-          <main className="flex-1 p-4 lg:p-6 overflow-auto">
+          <main className="flex-1 p-4 lg:p-6 overflow-auto" style={{ paddingLeft: 'max(1rem, env(safe-area-inset-left))', paddingRight: 'max(1rem, env(safe-area-inset-right))' }}>
             <div className="max-w-7xl mx-auto">
               {children}
             </div>

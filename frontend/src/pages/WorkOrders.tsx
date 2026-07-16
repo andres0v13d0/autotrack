@@ -14,7 +14,7 @@ import { workOrdersService } from '../services/workOrders.service';
 import { paymentsService } from '../services/payments.service';
 import { pdfService } from '../services/pdf.service';
 import type { WorkOrder } from '../types/workOrder';
-import { Plus, Circle, Clock, CheckCircle2, Check, FileText } from 'lucide-react';
+import { Plus, Circle, Clock, CheckCircle2, Check, FileText, Edit2, Save, X } from 'lucide-react';
 import Modal from '../components/ui/Modal';
 import { inputCls } from '../components/ui/Field';
 
@@ -38,6 +38,8 @@ export default function WorkOrders() {
   const [editingItems, setEditingItems] = useState<Record<string, { price: string; qty: string }>>({});
   const [amountToPay, setAmountToPay] = useState<string>('');
   const [taxRate, setTaxRate] = useState<string>('0');
+  const [editingDescription, setEditingDescription] = useState(false);
+  const [descriptionInput, setDescriptionInput] = useState('');
   const itemNameInputRef = useRef<HTMLInputElement>(null);
 
   const { data: workOrders = [], isLoading } = useQuery({
@@ -134,6 +136,33 @@ export default function WorkOrders() {
       qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
     },
   });
+
+  const updateDescriptionMutation = useMutation({
+    mutationFn: (newDescription: string) =>
+      selectedWorkOrderId ? workOrdersService.updateDescription(selectedWorkOrderId, newDescription) : Promise.reject('No work order selected'),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ['work-order', selectedWorkOrderId] });
+      qc.invalidateQueries({ queryKey: ['workOrders'] });
+      setEditingDescription(false);
+      setDescriptionInput('');
+    },
+  });
+
+  const handleStartEditDescription = () => {
+    setDescriptionInput(selectedOrder?.description_needed || '');
+    setEditingDescription(true);
+  };
+
+  const handleSaveDescription = () => {
+    if (descriptionInput.trim()) {
+      updateDescriptionMutation.mutate(descriptionInput.trim());
+    }
+  };
+
+  const handleCancelEditDescription = () => {
+    setEditingDescription(false);
+    setDescriptionInput('');
+  };
 
   const handleViewOrder = (workOrderId: string) => {
     setSelectedWorkOrderId(workOrderId);
@@ -363,6 +392,60 @@ export default function WorkOrders() {
                   <option value="picked_up">Picked Up</option>
                 </select>
               </div>
+            </div>
+
+            {/* Work Description Section */}
+            <div className="bg-blue-50 border-2 border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-3">
+                <h3 className="text-sm font-semibold" style={{ color: '#0f1f3d' }}>
+                  Work Description
+                </h3>
+                {!editingDescription && (
+                  <button
+                    onClick={handleStartEditDescription}
+                    className="inline-flex items-center gap-1 px-3 py-1 text-xs font-semibold text-orange-600 hover:bg-orange-100 rounded transition-colors"
+                  >
+                    <Edit2 size={14} />
+                    Edit
+                  </button>
+                )}
+              </div>
+              
+              {!editingDescription ? (
+                <p className="text-sm text-gray-700 whitespace-pre-wrap leading-relaxed">
+                  {selectedOrder.description_needed || <span className="text-gray-400 italic">No description</span>}
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  <textarea
+                    value={descriptionInput}
+                    onChange={(e) => setDescriptionInput(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-orange-500 resize-none text-sm"
+                    rows={4}
+                    placeholder="Enter work description..."
+                    disabled={updateDescriptionMutation.isPending}
+                  />
+                  <div className="flex justify-end gap-2">
+                    <button
+                      onClick={handleCancelEditDescription}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-gray-600 border border-gray-300 rounded hover:bg-gray-50 transition-colors"
+                      disabled={updateDescriptionMutation.isPending}
+                    >
+                      <X size={14} />
+                      Cancel
+                    </button>
+                    <button
+                      onClick={handleSaveDescription}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 text-xs font-semibold text-white rounded hover:opacity-90 transition-opacity disabled:opacity-60"
+                      style={{ backgroundColor: '#f97316' }}
+                      disabled={updateDescriptionMutation.isPending}
+                    >
+                      <Save size={14} />
+                      {updateDescriptionMutation.isPending ? 'Saving...' : 'Save'}
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Items Section - Invoice Style */}

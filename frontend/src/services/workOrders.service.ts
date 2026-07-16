@@ -65,4 +65,8 @@ export const workOrdersService = {
   /** PATCH /work-orders/:id */
   update: (workOrderId: string, data: { tax_rate?: number; delivery_status?: string }): Promise<WorkOrder> =>
     api.patch(`/work-orders/${workOrderId}`, data).then((res) => res.data),
+
+  /** PATCH /work-orders/:id - Update description */
+  updateDescription: (workOrderId: string, description_needed: string): Promise<WorkOrder> =>
+    api.patch(`/work-orders/${workOrderId}`, { description_needed }).then((res) => res.data),
 };

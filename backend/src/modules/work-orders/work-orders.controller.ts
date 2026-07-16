@@ -109,7 +109,7 @@ export class WorkOrdersController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }, @Request() req: any) {
+  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string; description_needed?: string }, @Request() req: any) {
     return this.workOrdersService.update(id, dto, req.user.id);
   }
 
