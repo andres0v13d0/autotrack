@@ -90,16 +90,22 @@ export class WorkOrdersController {
 
   @Post(':id/items')
   addItem(@Param('id') id: string, @Body() dto: AddItemDto, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     // Verify ownership
     this.workOrdersService.findOne(id, req.user.id);
-    return this.workOrdersService.addItem(id, dto);
+    return this.workOrdersService.addItem(id, dto, req.user.id);
   }
 
   @Delete(':id/items/:itemId')
   async removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     // Verify ownership
     await this.workOrdersService.findOne(workOrderId, req.user.id);
-    return this.workOrdersService.removeItem(workOrderId, itemId);
+    return this.workOrdersService.removeItem(workOrderId, itemId, req.user.id);
   }
 
   @Patch(':id')

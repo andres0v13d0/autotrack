@@ -112,8 +112,11 @@ export class WorkOrdersService {
     return order;
   }
 
-  async addItem(workOrderId: string, dto: AddItemDto): Promise<WorkOrder> {
-    const order = await this.findOne(workOrderId);
+  async addItem(workOrderId: string, dto: AddItemDto, userId?: string): Promise<WorkOrder> {
+    if (!userId) {
+      throw new BadRequestException('userId is required');
+    }
+    const order = await this.findOne(workOrderId, userId);
 
     const item = this.itemsRepo.create({
       work_order_id: workOrderId,
@@ -132,11 +135,14 @@ export class WorkOrdersService {
     console.log('🔍 Verified item:', verifyItem);
 
     // Recalculate order totals
-    return this.recalculateOrder(workOrderId);
+    return this.recalculateOrder(workOrderId, userId);
   }
 
-  async removeItem(workOrderId: string, itemId: string): Promise<WorkOrder> {
-    await this.findOne(workOrderId);
+  async removeItem(workOrderId: string, itemId: string, userId?: string): Promise<WorkOrder> {
+    if (!userId) {
+      throw new BadRequestException('userId is required');
+    }
+    await this.findOne(workOrderId, userId);
 
     const item = await this.itemsRepo.findOne({ where: { id: itemId } });
     if (!item) {
@@ -146,7 +152,7 @@ export class WorkOrdersService {
     await this.itemsRepo.remove(item);
 
     // Recalculate order totals
-    return this.recalculateOrder(workOrderId);
+    return this.recalculateOrder(workOrderId, userId);
   }
 
   async update(id: string, dto: { tax_rate?: number; delivery_status?: string }, userId?: string): Promise<WorkOrder> {
