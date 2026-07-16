@@ -562,7 +562,13 @@ export default function WorkOrders() {
                           type="number"
                           step="0.01"
                           min="0"
-                          placeholder={(typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total) : selectedOrder.total).toFixed(2)}
+                          placeholder={(() => {
+                            const taxRateNum = (taxRate && taxRate !== '' && taxRate !== '0') ? parseFloat(taxRate) : 0;
+                            const subtotal = typeof selectedOrder.subtotal === 'string' ? parseFloat(selectedOrder.subtotal) : selectedOrder.subtotal;
+                            const taxAmount = taxRateNum > 0 ? (subtotal * taxRateNum) / 100 : 0;
+                            const total = subtotal + taxAmount;
+                            return isNaN(total) ? '0.00' : total.toFixed(2);
+                          })()}
                           value={amountToPay}
                           onChange={(e) => setAmountToPay(e.target.value)}
                           className="w-20 px-2 py-1 border border-gray-300 rounded text-xs text-right font-semibold text-green-600"
@@ -571,8 +577,11 @@ export default function WorkOrders() {
                     </div>
                     <div className="flex justify-between items-center text-xs">
                       {(() => {
-                        const totalAmount = typeof selectedOrder.total === 'string' ? parseFloat(selectedOrder.total) : selectedOrder.total;
-                        const paidAmount = amountToPay ? parseFloat(amountToPay) : totalAmount;
+                        const taxRateNum = (taxRate && taxRate !== '' && taxRate !== '0') ? parseFloat(taxRate) : 0;
+                        const subtotal = typeof selectedOrder.subtotal === 'string' ? parseFloat(selectedOrder.subtotal) : selectedOrder.subtotal;
+                        const taxAmount = taxRateNum > 0 ? (subtotal * taxRateNum) / 100 : 0;
+                        const totalAmount = subtotal + taxAmount;
+                        const paidAmount = amountToPay ? parseFloat(amountToPay) : 0;
                         const balanceDue = Math.max(0, totalAmount - paidAmount);
                         return (
                           <>
