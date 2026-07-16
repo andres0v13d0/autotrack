@@ -1,29 +1,31 @@
-const CACHE_NAME = 'autotrack-v1';
+const CACHE_NAME = 'autotrack-v2';
 const urlsToCache = [
   '/',
   '/index.html',
   '/favicon.ico',
-  '/logo.jpeg',
+  '/logo.png',
   '/manifest.json'
 ];
 
-// Install event
+// Install event - force update
 self.addEventListener('install', event => {
+  console.log('🔧 Installing SW version:', CACHE_NAME);
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('✅ Cache opened');
       return cache.addAll(urlsToCache).catch(err => {
         console.warn('⚠️ Some assets failed to cache:', err);
-        // Continue even if some assets fail to cache
         return Promise.resolve();
       });
     })
   );
+  // Skip waiting to activate immediately
   self.skipWaiting();
 });
 
-// Activate event
+// Activate event - clean old caches
 self.addEventListener('activate', event => {
+  console.log('🚀 Activating SW');
   event.waitUntil(
     caches.keys().then(cacheNames => {
       return Promise.all(
@@ -89,8 +91,8 @@ self.addEventListener('sync', event => {
 self.addEventListener('push', event => {
   const options = {
     body: event.data ? event.data.text() : 'New notification',
-    icon: '/logo.jpeg',
-    badge: '/logo.jpeg',
+    icon: '/logo.png',
+    badge: '/logo.png',
     tag: 'autotrack-notification',
     requireInteraction: false
   };
