@@ -14,16 +14,16 @@
   "iarc_rating_id": "",
   "screenshots": [
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "narrow",
       "purpose": "any"
     },
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "form_factor": "wide",
       "purpose": "any"
     }
@@ -35,27 +35,27 @@
       "type": "image/x-icon"
     },
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "any"
     },
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "192x192",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "maskable"
     },
     {
-      "src": "/logo.jpeg",
+      "src": "/logo.png",
       "sizes": "512x512",
-      "type": "image/jpeg",
+      "type": "image/png",
       "purpose": "maskable"
     }
   ],
@@ -64,27 +64,13 @@
       "name": "Create Work Order",
       "short_name": "New Order",
       "description": "Create a new work order quickly",
-      "url": "/work-orders?new=true&utm_source=shortcut",
-      "icons": [
-        {
-          "src": "/logo.jpeg",
-          "sizes": "192x192",
-          "type": "image/jpeg"
-        }
-      ]
+      "url": "/work-orders?new=true&utm_source=shortcut"
     },
     {
       "name": "View Customers",
       "short_name": "Customers",
       "description": "View all customers",
-      "url": "/customers?utm_source=shortcut",
-      "icons": [
-        {
-          "src": "/logo.jpeg",
-          "sizes": "192x192",
-          "type": "image/jpeg"
-        }
-      ]
+      "url": "/customers?utm_source=shortcut"
     }
   ],
   "prefer_related_applications": false,

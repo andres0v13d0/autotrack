@@ -11,38 +11,61 @@ export default function SignaturePad({ value, onChange, onClose }: SignaturePadP
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isDrawing, setIsDrawing] = useState(false);
 
-  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const getCoordinates = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return null;
+
+    const rect = canvas.getBoundingClientRect();
+    
+    if ('touches' in e) {
+      // Touch event
+      const touch = e.touches[0];
+      return {
+        x: touch.clientX - rect.left,
+        y: touch.clientY - rect.top,
+      };
+    } else {
+      // Mouse event
+      return {
+        x: e.clientX - rect.left,
+        y: e.clientY - rect.top,
+      };
+    }
+  };
+
+  const startDrawing = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const coords = getCoordinates(e);
+    if (!coords) return;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.beginPath();
-      ctx.moveTo(x, y);
+      ctx.moveTo(coords.x, coords.y);
       setIsDrawing(true);
     }
   };
 
-  const draw = (e: React.MouseEvent<HTMLCanvasElement>) => {
+  const draw = (e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
     if (!isDrawing) return;
 
     const canvas = canvasRef.current;
     if (!canvas) return;
 
-    const rect = canvas.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const coords = getCoordinates(e);
+    if (!coords) return;
 
     const ctx = canvas.getContext('2d');
     if (ctx) {
       ctx.lineWidth = 2;
       ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
       ctx.strokeStyle = '#000000';
-      ctx.lineTo(x, y);
+      ctx.lineTo(coords.x, coords.y);
       ctx.stroke();
     }
   };
@@ -101,7 +124,12 @@ export default function SignaturePad({ value, onChange, onClose }: SignaturePadP
         onMouseMove={draw}
         onMouseUp={stopDrawing}
         onMouseLeave={stopDrawing}
-        className="border-2 border-gray-300 rounded-lg cursor-crosshair bg-white w-full"
+        onTouchStart={startDrawing}
+        onTouchMove={draw}
+        onTouchEnd={stopDrawing}
+        onTouchCancel={stopDrawing}
+        className="border-2 border-gray-300 rounded-lg cursor-crosshair bg-white w-full touch-none"
+        style={{ WebkitTouchCallout: 'none', WebkitUserSelect: 'none' } as React.CSSProperties}
       />
       <div className="flex gap-2">
         <button

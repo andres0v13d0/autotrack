@@ -11,7 +11,7 @@ Disallow: /*.css$
 Crawl-delay: 1
 
 # Sitemaps
-Sitemap: https://autotrack.app/sitemap.xml
+Sitemap: https://autotrack.flystock.com.co/sitemap.xml
 
 # Google Search Console
 User-agent: Googlebot
