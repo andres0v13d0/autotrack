@@ -354,10 +354,6 @@ const WorkOrderPDFDocument: React.FC<WorkOrderPDFProps> = ({ workOrder, settings
               {workOrder.delivery_status.replace(/_/g, ' ').toUpperCase()}
             </Text>
           </View>
-          <View style={styles.gridCol}>
-            <Text style={styles.gridColLabel}>Tax Rate</Text>
-            <Text style={styles.gridColValue}>{(taxRate * 100).toFixed(2)}%</Text>
-          </View>
         </View>
 
         {/* Vehicle Information */}
@@ -425,9 +421,7 @@ const WorkOrderPDFDocument: React.FC<WorkOrderPDFProps> = ({ workOrder, settings
             <Text style={styles.summaryValue}>${subtotal.toFixed(2)}</Text>
           </View>
           <View style={styles.summaryRow}>
-            <Text style={styles.summaryLabel}>
-              Tax ({(taxRate * 100).toFixed(2)}%)
-            </Text>
+            <Text style={styles.summaryLabel}>Tax</Text>
             <Text style={styles.summaryValue}>${calculatedTax.toFixed(2)}</Text>
           </View>
           <View style={styles.totalRow}>
