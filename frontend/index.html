@@ -63,13 +63,13 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     <script>
-      // Service Worker Registration
+      // Unregister all service workers to stop reload loops
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').then(
-            registration => console.log('✅ SW registered'),
-            error => console.log('❌ SW registration failed:', error)
-          );
+        navigator.serviceWorker.getRegistrations().then(registrations => {
+          registrations.forEach(registration => {
+            registration.unregister();
+            console.log('❌ SW unregistered');
+          });
         });
       }
     </script>
