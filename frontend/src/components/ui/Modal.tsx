@@ -21,8 +21,8 @@ export default function Modal({ title, onClose, children, footer, size = 'md' }:
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm p-4">
-      <div className={`bg-white rounded-2xl shadow-xl ${sizeClasses[size]} w-full overflow-hidden flex flex-col max-h-[90vh] animate-in fade-in zoom-in-95`}>
-        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between">
+      <div className={`bg-white rounded-2xl shadow-xl ${sizeClasses[size]} w-full overflow-hidden flex flex-col max-h-[90vh] md:max-h-[85vh] animate-in fade-in zoom-in-95`}>
+        <div className="px-6 py-5 border-b border-gray-200 flex items-center justify-between flex-shrink-0">
           <h2 className="text-base font-bold" style={{ color: '#0f1f3d' }}>
             {title}
           </h2>
@@ -38,7 +38,7 @@ export default function Modal({ title, onClose, children, footer, size = 'md' }:
           {children}
         </div>
         {footer && (
-          <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-2 bg-gray-50">
+          <div className="border-t border-gray-200 px-6 py-4 flex justify-end gap-2 bg-gray-50 flex-shrink-0">
             {footer}
           </div>
         )}

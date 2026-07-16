@@ -320,7 +320,7 @@ export default function WorkOrders() {
             </div>
           }
         >
-          <div className="space-y-6 max-h-[85vh] overflow-y-auto">
+          <div className="space-y-6">
 
             {/* Vehicle Details & Delivery Status */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-6 pb-6 border-b-2 border-gray-200">
@@ -360,115 +360,117 @@ export default function WorkOrders() {
             {/* Items Section - Invoice Style */}
             <div>
               <h2 className="text-lg font-bold mb-4" style={{ color: '#0f1f3d' }}>Items</h2>
-              <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr style={{ backgroundColor: '#f3f4f6' }}>
-                      <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.description')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.price')}</th>
-                      <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.qty')}</th>
-                      <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide">{t('workOrders.lineTotal')}</th>
-                      {selectedOrder.items.length > 0 && <th className="px-4 py-3"></th>}
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-gray-200">
-                    {/* Existing Items - Editable Rows */}
-                    {selectedOrder.items.map((item, idx) => {
-                      const edited = editingItems[item.id];
-                      const price = edited ? parseFloat(edited.price) : (typeof item.price === 'string' ? parseFloat(item.price) : item.price);
-                      const qty = edited ? parseInt(edited.qty, 10) : item.qty;
-                      const lineTotal = (price * qty).toFixed(2);
+              <div className="bg-white border border-gray-200 rounded-lg overflow-x-auto">
+                <div className="min-w-full">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr style={{ backgroundColor: '#f3f4f6' }}>
+                        <th className="px-4 py-3 text-left text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.description')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.price')}</th>
+                        <th className="px-4 py-3 text-center text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.qty')}</th>
+                        <th className="px-4 py-3 text-right text-xs font-bold text-gray-700 uppercase tracking-wide whitespace-nowrap">{t('workOrders.lineTotal')}</th>
+                        {selectedOrder.items.length > 0 && <th className="px-4 py-3"></th>}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {/* Existing Items - Editable Rows */}
+                      {selectedOrder.items.map((item, idx) => {
+                        const edited = editingItems[item.id];
+                        const price = edited ? parseFloat(edited.price) : (typeof item.price === 'string' ? parseFloat(item.price) : item.price);
+                        const qty = edited ? parseInt(edited.qty, 10) : item.qty;
+                        const lineTotal = (price * qty).toFixed(2);
 
-                      return (
-                        <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                          <td className="px-4 py-3">
-                            <input 
-                              type="text"
-                              defaultValue={item.name}
-                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded"
-                              readOnly
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input 
-                              type="number"
-                              step="0.01"
-                              value={edited?.price ?? (typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2))}
-                              onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, price: e.target.value } })}
-                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-right"
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input 
-                              type="number"
-                              min="1"
-                              value={edited?.qty ?? item.qty}
-                              onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, qty: e.target.value } })}
-                              className="text-xs w-full px-2 py-1 border border-gray-300 rounded text-center"
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="text-xs font-bold text-gray-900">
-                              ${lineTotal}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3 text-center">
-                            <button
-                              onClick={() => removeItemMutation.mutate(item.id)}
-                              className="text-lg text-red-600 hover:text-red-800 transition-colors cursor-pointer font-bold"
-                            >
-                              ×
-                            </button>
-                          </td>
-                        </tr>
-                      );
-                    })}
+                        return (
+                          <tr key={item.id} className={idx % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
+                            <td className="px-4 py-3">
+                              <input 
+                                type="text"
+                                defaultValue={item.name}
+                                className="text-xs w-full px-2 py-1 border border-gray-300 rounded whitespace-nowrap"
+                                readOnly
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                type="number"
+                                step="0.01"
+                                value={edited?.price ?? (typeof item.price === 'string' ? parseFloat(item.price).toFixed(2) : item.price.toFixed(2))}
+                                onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, price: e.target.value } })}
+                                className="text-xs w-24 px-2 py-1 border border-gray-300 rounded text-right"
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                type="number"
+                                min="1"
+                                value={edited?.qty ?? item.qty}
+                                onChange={(e) => setEditingItems({ ...editingItems, [item.id]: { ...edited, qty: e.target.value } })}
+                                className="text-xs w-16 px-2 py-1 border border-gray-300 rounded text-center"
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="text-xs font-bold text-gray-900 whitespace-nowrap">
+                                ${lineTotal}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3 text-center">
+                              <button
+                                onClick={() => removeItemMutation.mutate(item.id)}
+                                className="text-lg text-red-600 hover:text-red-800 transition-colors cursor-pointer font-bold"
+                              >
+                                ×
+                              </button>
+                            </td>
+                          </tr>
+                        );
+                      })}
 
-                    {/* New Item Input Row - Always Visible */}
-                    {(() => {
-                      const newPrice = parseFloat(watchItem('price') || '0') || 0;
-                      const newQty = parseInt(watchItem('qty') || '1', 10) || 1;
-                      const newLineTotal = (newPrice * newQty).toFixed(2);
-                      
-                      return (
-                        <tr className="bg-blue-50">
-                          <td className="px-4 py-3">
-                            <input 
-                              {...registerItem('name')} 
-                              className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
-                              placeholder="Description" 
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input 
-                              {...registerItem('price')} 
-                              type="number" 
-                              step="0.01" 
-                              min="0.01" 
-                              className={`${inputCls(!!itemErrors.price)} text-xs w-full text-right`} 
-                              placeholder="0.00" 
-                            />
-                          </td>
-                          <td className="px-4 py-3">
-                            <input 
-                              {...registerItem('qty')} 
-                              type="number" 
-                              min="1" 
-                              className={`${inputCls(!!itemErrors.qty)} text-xs w-full text-center`} 
-                              placeholder="1" 
-                            />
-                          </td>
-                          <td className="px-4 py-3 text-right">
-                            <div className="text-xs font-medium text-gray-900">
-                              ${newLineTotal}
-                            </div>
-                          </td>
-                          <td className="px-4 py-3"></td>
-                        </tr>
-                      );
-                    })()}
-                  </tbody>
-                </table>
+                      {/* New Item Input Row - Always Visible */}
+                      {(() => {
+                        const newPrice = parseFloat(watchItem('price') || '0') || 0;
+                        const newQty = parseInt(watchItem('qty') || '1', 10) || 1;
+                        const newLineTotal = (newPrice * newQty).toFixed(2);
+                        
+                        return (
+                          <tr className="bg-blue-50">
+                            <td className="px-4 py-3">
+                              <input 
+                                {...registerItem('name')} 
+                                className={`${inputCls(!!itemErrors.name)} text-xs w-full`} 
+                                placeholder="Description" 
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                {...registerItem('price')} 
+                                type="number" 
+                                step="0.01" 
+                                min="0.01" 
+                                className={`${inputCls(!!itemErrors.price)} text-xs w-24`} 
+                                placeholder="0.00" 
+                              />
+                            </td>
+                            <td className="px-4 py-3">
+                              <input 
+                                {...registerItem('qty')} 
+                                type="number" 
+                                min="1" 
+                                className={`${inputCls(!!itemErrors.qty)} text-xs w-16`} 
+                                placeholder="1" 
+                              />
+                            </td>
+                            <td className="px-4 py-3 text-right">
+                              <div className="text-xs font-medium text-gray-900 whitespace-nowrap">
+                                ${newLineTotal}
+                              </div>
+                            </td>
+                            <td className="px-4 py-3"></td>
+                          </tr>
+                        );
+                      })()}
+                    </tbody>
+                  </table>
+                </div>
               </div>
 
               {/* Add Item Link - Outside Table */}
