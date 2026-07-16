@@ -4,7 +4,7 @@ import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Plus, MoreVertical, Phone, MapPin, Truck, AlertCircle, User, CreditCard, Wrench, Edit2, X, Check } from 'lucide-react';
+import { Plus, MoreVertical, Phone, MapPin, Truck, AlertCircle, User, CreditCard, Wrench, Edit2, X, Check, DollarSign, Wallet } from 'lucide-react';
 import axios from 'axios';
 import { createPortal } from 'react-dom';
 import Layout from '../components/Layout';
@@ -25,12 +25,6 @@ const vehicleSchema = z.object({
   plate: z.string().min(1, 'Plate is required'),
   model: z.string().min(1, 'Model is required'),
   description: z.string().optional(),
-});
-
-const paymentSchema = z.object({
-  amount: z.number().min(0.01),
-  method: z.enum(['zelle', 'card', 'cash']),
-  date: z.string(),
 });
 
 export default function Customers() {
@@ -56,7 +50,20 @@ export default function Customers() {
 
   const customerForm = useForm({ resolver: zodResolver(customerSchema) });
   const vehicleForm = useForm({ resolver: zodResolver(vehicleSchema) });
-  const paymentForm = useForm({ resolver: zodResolver(paymentSchema) });
+  
+  // Create payment schema dynamically with access to customerBalance
+  const createPaymentSchema = (maxAmount: number) => z.object({
+    amount: z.number()
+      .refine(val => val > 0, 'Amount must be greater than $0.00')
+      .refine(val => val >= 0.01, 'Amount must be at least $0.01')
+      .refine(val => val <= maxAmount, `Cannot exceed amount due ($${maxAmount.toFixed(2)})`),
+    method: z.enum(['zelle', 'card', 'cash']),
+    date: z.string(),
+  });
+
+  const paymentForm = useForm({ 
+    resolver: zodResolver(createPaymentSchema(customerBalance.debt))
+  });
   const [vehiclesToAdd, setVehiclesToAdd] = useState<Array<{ plate: string; model: string; description?: string }>>([]);
   const [existingVehicles, setExistingVehicles] = useState<Array<{ id: string; plate: string; model: string; description?: string }>>([]);
   const [editingVehicle, setEditingVehicle] = useState<{ id: string; plate: string; model: string; description?: string } | null>(null);
@@ -577,31 +584,112 @@ export default function Customers() {
       )}
 
       {showPaymentModal && selectedCustomer && (
-        <Modal title={`💳 Register Payment - ${selectedCustomer.name}`} onClose={() => setShowPaymentModal(false)}>
-          <form onSubmit={paymentForm.handleSubmit((data) => createPaymentMutation.mutate(data))} className="space-y-5">
-            <div className="bg-orange-50 border border-orange-200 rounded-xl p-4">
-              <p className="text-sm text-gray-700">Select a payment method and enter the amount received.</p>
-            </div>
-            <Field label="Amount" error={paymentForm.formState.errors.amount?.message}>
-              <div className="relative">
-                <span className="absolute left-4 top-3.5 text-xl" style={{ color: '#f97316' }}>$</span>
-                <input {...paymentForm.register('amount', { valueAsNumber: true })} type="number" step="0.01" min="0" className={`${inputCls(!!paymentForm.formState.errors.amount)} text-base px-4 pl-8 py-3 rounded-lg`} placeholder="0.00" />
+        <Modal title={`Register Payment - ${selectedCustomer.name}`} onClose={() => setShowPaymentModal(false)} size="lg">
+          <form onSubmit={paymentForm.handleSubmit((data) => createPaymentMutation.mutate(data))} className="space-y-6">
+            {/* Info Box */}
+            <div className="bg-gradient-to-r from-blue-50 to-blue-100 border-l-4 border-blue-500 rounded-xl p-5">
+              <div className="flex gap-3">
+                <AlertCircle size={20} className="text-blue-600 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold text-blue-900 text-sm">Account Overview</p>
+                  <div className="grid grid-cols-3 gap-3 mt-3">
+                    <div className="bg-white rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-600 uppercase font-semibold">Total Due</p>
+                      <p className="font-bold text-lg text-blue-600 mt-1">{formatCurrency(customerBalance.debt)}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-600 uppercase font-semibold">Total Paid</p>
+                      <p className="font-bold text-lg text-green-600 mt-1">{formatCurrency(customerBalance.paid)}</p>
+                    </div>
+                    <div className="bg-white rounded-lg p-3 text-center">
+                      <p className="text-xs text-gray-600 uppercase font-semibold">Total Invoiced</p>
+                      <p className="font-bold text-lg text-gray-700 mt-1">{formatCurrency(customerBalance.total)}</p>
+                    </div>
+                  </div>
+                </div>
               </div>
-            </Field>
-            <Field label="Payment Method" error={paymentForm.formState.errors.method?.message}>
-              <select {...paymentForm.register('method')} className={`${inputCls(!!paymentForm.formState.errors.method)} text-base px-4 py-3 rounded-lg`}>
-                <option value="">Select a payment method...</option>
-                <option value="zelle">💰 Zelle</option>
-                <option value="card">💳 Card / Credit</option>
-                <option value="cash">💵 Cash</option>
-              </select>
-            </Field>
-            <Field label="Payment Date" error={paymentForm.formState.errors.date?.message}>
-              <input {...paymentForm.register('date')} type="date" className={`${inputCls(!!paymentForm.formState.errors.date)} text-base px-4 py-3 rounded-lg`} />
-            </Field>
-            <div className="flex justify-end gap-3 pt-4">
-              <button type="button" onClick={() => setShowPaymentModal(false)} className="px-6 py-2.5 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors font-semibold">Cancel</button>
-              <button type="submit" disabled={createPaymentMutation.isPending} className="px-6 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity" style={{ backgroundColor: '#f97316' }}>{createPaymentMutation.isPending ? 'Processing...' : 'Register Payment'}</button>
+            </div>
+
+            {/* Form Section */}
+            <div className="bg-gray-50 rounded-xl p-5 space-y-4">
+              <p className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Payment Details</p>
+
+              {/* Amount */}
+              <div>
+                <Field label="Amount" error={paymentForm.formState.errors.amount?.message}>
+                  <div className="relative">
+                    <DollarSign size={20} className="absolute left-3 top-3.5" style={{ color: '#f97316' }} />
+                    <input 
+                      {...paymentForm.register('amount', { 
+                        valueAsNumber: true,
+                        setValueAs: (val) => {
+                          const num = parseFloat(val);
+                          return isNaN(num) ? 0 : num;
+                        }
+                      })}
+                      type="number" 
+                      step="0.01" 
+                      min="0.01" 
+                      onBlur={() => paymentForm.trigger('amount')}
+                      className={`${inputCls(!!paymentForm.formState.errors.amount)} text-base px-4 pl-10 py-3 rounded-lg w-full`} 
+                      placeholder="0.00" 
+                    />
+                  </div>
+                </Field>
+              </div>
+
+              {/* Payment Method */}
+              <div>
+                <Field label="Payment Method" error={paymentForm.formState.errors.method?.message}>
+                  <div className="relative">
+                    <select 
+                      {...paymentForm.register('method')} 
+                      onBlur={() => paymentForm.trigger('method')}
+                      className={`${inputCls(!!paymentForm.formState.errors.method)} text-base px-4 py-3 rounded-lg w-full appearance-none cursor-pointer bg-white`}
+                    >
+                      <option value="">Select method...</option>
+                      <option value="zelle">Zelle</option>
+                      <option value="card">Credit Card</option>
+                      <option value="cash">Cash</option>
+                    </select>
+                    <div className="absolute right-3 top-3.5 pointer-events-none">
+                      <Wallet size={20} style={{ color: '#f97316' }} />
+                    </div>
+                  </div>
+                </Field>
+              </div>
+
+              {/* Payment Date */}
+              <div>
+                <Field label="Payment Date" error={paymentForm.formState.errors.date?.message}>
+                  <input 
+                    {...paymentForm.register('date')} 
+                    type="date" 
+                    onBlur={() => paymentForm.trigger('date')}
+                    className={`${inputCls(!!paymentForm.formState.errors.date)} text-base px-4 py-3 rounded-lg w-full`}
+                  />
+                </Field>
+              </div>
+            </div>
+
+            {/* Footer */}
+            <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+              <button 
+                type="button" 
+                onClick={() => setShowPaymentModal(false)} 
+                className="px-6 py-2.5 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors font-semibold"
+              >
+                Cancel
+              </button>
+              <button 
+                type="submit" 
+                disabled={createPaymentMutation.isPending} 
+                className="px-6 py-2.5 text-sm rounded-lg text-white font-semibold hover:opacity-90 disabled:opacity-60 cursor-pointer transition-opacity inline-flex items-center gap-2"
+                style={{ backgroundColor: '#f97316' }}
+              >
+                <CreditCard size={16} />
+                {createPaymentMutation.isPending ? 'Processing...' : 'Register Payment'}
+              </button>
             </div>
           </form>
         </Modal>
