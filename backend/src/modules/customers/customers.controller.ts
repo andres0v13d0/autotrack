@@ -10,6 +10,7 @@ import {
   UseGuards,
   Inject,
   Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
@@ -34,6 +35,9 @@ export class CustomersController {
   @Roles('admin', 'front_desk')
   @ApiOperation({ summary: 'Create a customer' })
   create(@Body() dto: CreateCustomerDto, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.create(dto, req.user.id);
   }
 
@@ -41,6 +45,9 @@ export class CustomersController {
   @Roles('admin', 'front_desk', 'technician')
   @ApiOperation({ summary: 'List all customers' })
   findAll(@Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.findAll(req.user.id);
   }
 
@@ -49,6 +56,9 @@ export class CustomersController {
   @ApiOperation({ summary: 'Search customer by phone' })
   @ApiQuery({ name: 'phone', required: true })
   findByPhone(@Query('phone') phone: string, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.findByPhone(phone, req.user.id);
   }
 
@@ -56,6 +66,9 @@ export class CustomersController {
   @Roles('admin', 'front_desk', 'technician')
   @ApiOperation({ summary: 'Get a customer by id' })
   findOne(@Param('id') id: string, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.findOne(id, req.user.id);
   }
 
@@ -63,6 +76,9 @@ export class CustomersController {
   @Roles('admin', 'front_desk')
   @ApiOperation({ summary: 'Update a customer' })
   update(@Param('id') id: string, @Body() dto: UpdateCustomerDto, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.update(id, dto, req.user.id);
   }
 
@@ -70,6 +86,9 @@ export class CustomersController {
   @Roles('admin')
   @ApiOperation({ summary: 'Delete a customer (admin only)' })
   remove(@Param('id') id: string, @Request() req: any) {
+    if (!req.user?.id) {
+      throw new BadRequestException('User not authenticated');
+    }
     return this.service.remove(id, req.user.id);
   }
 
