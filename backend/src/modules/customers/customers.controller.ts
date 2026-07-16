@@ -9,6 +9,7 @@ import {
   Query,
   UseGuards,
   Inject,
+  Request,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiQuery, ApiTags } from '@nestjs/swagger';
 import { CustomersService } from './customers.service';
@@ -32,8 +33,8 @@ export class CustomersController {
   @Post()
   @Roles('admin', 'front_desk')
   @ApiOperation({ summary: 'Create a customer' })
-  create(@Body() dto: CreateCustomerDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateCustomerDto, @Request() req: any) {
+    return this.service.create(dto, req.user.id);
   }
 
   @Get()

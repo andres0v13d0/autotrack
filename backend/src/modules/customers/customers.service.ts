@@ -16,10 +16,10 @@ export class CustomersService {
     private readonly repo: Repository<Customer>,
   ) {}
 
-  async create(dto: CreateCustomerDto): Promise<Customer> {
+  async create(dto: CreateCustomerDto, userId: string): Promise<Customer> {
     const existing = await this.repo.findOne({ where: { phone: dto.phone } });
     if (existing) throw new ConflictException('Phone number already registered');
-    const customer = this.repo.create(dto);
+    const customer = this.repo.create({ ...dto, created_by_id: userId });
     return this.repo.save(customer);
   }
 
