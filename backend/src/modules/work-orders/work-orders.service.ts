@@ -62,42 +62,46 @@ export class WorkOrdersService {
     return reloaded;
   }
 
-  async findAll(): Promise<WorkOrder[]> {
-    return this.workOrdersRepo.find({
-      relations: {
-        items: true,
-        vehicle: {
-          customer: true,
-        },
-      },
-      order: { created_at: 'DESC' },
-    });
+  async findAll(userId?: string): Promise<WorkOrder[]> {
+    const query = this.workOrdersRepo.createQueryBuilder('wo')
+      .leftJoinAndSelect('wo.items', 'items')
+      .leftJoinAndSelect('wo.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.customer', 'customer');
+    
+    if (userId) {
+      query.where('wo.created_by_id = :userId', { userId });
+    }
+    
+    return query.orderBy('wo.created_at', 'DESC').getMany();
   }
 
-  async findByVehicle(vehicleId: string): Promise<WorkOrder[]> {
-    return this.workOrdersRepo.find({
-      where: { vehicle_id: vehicleId },
-      relations: {
-        items: true,
-        vehicle: {
-          customer: true,
-        },
-      },
-      order: { created_at: 'DESC' },
-    });
+  async findByVehicle(vehicleId: string, userId?: string): Promise<WorkOrder[]> {
+    const query = this.workOrdersRepo.createQueryBuilder('wo')
+      .where('wo.vehicle_id = :vehicleId', { vehicleId })
+      .leftJoinAndSelect('wo.items', 'items')
+      .leftJoinAndSelect('wo.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.customer', 'customer');
+    
+    if (userId) {
+      query.andWhere('wo.created_by_id = :userId', { userId });
+    }
+    
+    return query.orderBy('wo.created_at', 'DESC').getMany();
   }
 
-  async findOne(id: string): Promise<WorkOrder> {
-    const order = await this.workOrdersRepo.findOne({
-      where: { id },
-      relations: {
-        items: true,
-        vehicle: {
-          customer: true,
-        },
-        created_by: true,
-      },
-    });
+  async findOne(id: string, userId?: string): Promise<WorkOrder> {
+    const query = this.workOrdersRepo.createQueryBuilder('wo')
+      .where('wo.id = :id', { id })
+      .leftJoinAndSelect('wo.items', 'items')
+      .leftJoinAndSelect('wo.vehicle', 'vehicle')
+      .leftJoinAndSelect('vehicle.customer', 'customer')
+      .leftJoinAndSelect('wo.created_by', 'created_by');
+    
+    if (userId) {
+      query.andWhere('wo.created_by_id = :userId', { userId });
+    }
+    
+    const order = await query.getOne();
 
     if (!order) {
       throw new NotFoundException(`Work order ${id} not found`);
@@ -143,13 +147,13 @@ export class WorkOrdersService {
     return this.recalculateOrder(workOrderId);
   }
 
-  async update(id: string, dto: { tax_rate?: number; delivery_status?: string }): Promise<WorkOrder> {
-    const order = await this.findOne(id);
+  async update(id: string, dto: { tax_rate?: number; delivery_status?: string }, userId?: string): Promise<WorkOrder> {
+    const order = await this.findOne(id, userId);
 
     if (dto.tax_rate !== undefined) {
       order.tax_rate = dto.tax_rate;
       // Recalculate tax and total with new tax rate
-      return this.recalculateOrder(id);
+      return this.recalculateOrder(id, userId);
     }
 
     if (dto.delivery_status !== undefined) {
@@ -158,24 +162,10 @@ export class WorkOrdersService {
 
     await this.workOrdersRepo.save(order);
 
-    const reloaded = await this.workOrdersRepo.findOne({
-      where: { id },
-      relations: {
-        items: true,
-        vehicle: {
-          customer: true,
-        },
-      },
-    });
-
-    if (!reloaded) {
-      throw new NotFoundException(`Work order ${id} not found after update`);
-    }
-
-    return reloaded;
+    return this.findOne(id, userId);
   }
 
-  private async recalculateOrder(workOrderId: string): Promise<WorkOrder> {
+  private async recalculateOrder(workOrderId: string, userId?: string): Promise<WorkOrder> {
     console.log('🔄 Recalculating order:', workOrderId);
     
     const order = await this.workOrdersRepo.findOne({
@@ -188,6 +178,11 @@ export class WorkOrdersService {
     console.log('📦 Order items loaded:', order?.items?.length || 0, 'items');
 
     if (!order) {
+      throw new NotFoundException(`Work order ${workOrderId} not found`);
+    }
+
+    // Verify user ownership if userId provided
+    if (userId && order.created_by_id !== userId) {
       throw new NotFoundException(`Work order ${workOrderId} not found`);
     }
 
@@ -205,22 +200,6 @@ export class WorkOrdersService {
     await this.workOrdersRepo.save(order);
     
     // Return with relations
-    const reloaded = await this.workOrdersRepo.findOne({
-      where: { id: workOrderId },
-      relations: {
-        items: true,
-        vehicle: {
-          customer: true,
-        },
-      },
-    });
-
-    console.log('✅ Final order returned with', reloaded?.items?.length || 0, 'items');
-    
-    if (!reloaded) {
-      throw new NotFoundException(`Work order ${workOrderId} not found after recalculation`);
-    }
-    
-    return reloaded;
+    return this.findOne(workOrderId, userId);
   }
 }

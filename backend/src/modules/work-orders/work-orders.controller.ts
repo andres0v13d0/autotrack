@@ -41,18 +41,18 @@ export class WorkOrdersController {
   }
 
   @Get()
-  findAll() {
-    return this.workOrdersService.findAll();
+  findAll(@Request() req: any) {
+    return this.workOrdersService.findAll(req.user.id);
   }
 
   @Get('vehicle/:vehicleId')
-  findByVehicle(@Param('vehicleId') vehicleId: string) {
-    return this.workOrdersService.findByVehicle(vehicleId);
+  findByVehicle(@Param('vehicleId') vehicleId: string, @Request() req: any) {
+    return this.workOrdersService.findByVehicle(vehicleId, req.user.id);
   }
 
   @Get(':id/pdf-data')
   async getPdfData(@Param('id') id: string, @Request() req: any) {
-    const workOrder = await this.workOrdersService.findOne(id);
+    const workOrder = await this.workOrdersService.findOne(id, req.user.id);
     const settings = await this.pdfService.getSettings(req.user.id);
     return {
       workOrder,
@@ -63,9 +63,11 @@ export class WorkOrdersController {
   // ===== INTAKE FORM ENDPOINTS =====
 
   @Get(':workOrderId/intake-form')
-  async getIntakeForm(@Param('workOrderId') workOrderId: string) {
+  async getIntakeForm(@Param('workOrderId') workOrderId: string, @Request() req: any) {
     try {
       console.log('🔍 Getting intake form for work order:', workOrderId);
+      // Verify ownership first
+      await this.workOrdersService.findOne(workOrderId, req.user.id);
       const result = await this.intakeFormService.findByWorkOrderId(workOrderId);
       console.log('✅ Found intake form:', result);
       return result;
@@ -76,23 +78,27 @@ export class WorkOrdersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.workOrdersService.findOne(id);
+  findOne(@Param('id') id: string, @Request() req: any) {
+    return this.workOrdersService.findOne(id, req.user.id);
   }
 
   @Post(':id/items')
-  addItem(@Param('id') id: string, @Body() dto: AddItemDto) {
+  addItem(@Param('id') id: string, @Body() dto: AddItemDto, @Request() req: any) {
+    // Verify ownership
+    this.workOrdersService.findOne(id, req.user.id);
     return this.workOrdersService.addItem(id, dto);
   }
 
   @Delete(':id/items/:itemId')
-  removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string) {
+  async removeItem(@Param('id') workOrderId: string, @Param('itemId') itemId: string, @Request() req: any) {
+    // Verify ownership
+    await this.workOrdersService.findOne(workOrderId, req.user.id);
     return this.workOrdersService.removeItem(workOrderId, itemId);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }) {
-    return this.workOrdersService.update(id, dto);
+  update(@Param('id') id: string, @Body() dto: { tax_rate?: number; delivery_status?: string }, @Request() req: any) {
+    return this.workOrdersService.update(id, dto, req.user.id);
   }
 
   @Post(':workOrderId/intake-form')
