@@ -11,6 +11,9 @@ import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import Modal from '../components/ui/Modal';
 import { CustomersSkeleton, CustomerDetailSkeleton } from '../components/ui/Skeletons';
+import type { AlertType } from '../components/ui/Alert';
+import Alert from '../components/ui/Alert';
+import ConfirmDialog from '../components/ui/ConfirmDialog';
 import CreateWorkOrderModal from '../components/CreateWorkOrderModal';
 import { customersService } from '../services/customers.service';
 import { vehiclesService } from '../services/vehicles.service';
@@ -36,9 +39,18 @@ export default function Customers() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState<Customer | null>(null);
   const [showWorkOrderModal, setShowWorkOrderModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
+  
+  const [alert, setAlert] = useState<{ type: AlertType; title: string; message?: string } | null>(null);
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    confirmText?: string;
+    isDangerous?: boolean;
+    onConfirm: () => void;
+  } | null>(null);
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
@@ -101,7 +113,7 @@ export default function Customers() {
       
       return customer;
     },
-    onSuccess: () => {
+    onSuccess: (customer) => {
       qc.invalidateQueries({ queryKey: ['customers'] });
       setShowCreateModal(false);
       customerForm.reset();
@@ -110,6 +122,19 @@ export default function Customers() {
       setExistingVehicles([]);
       setEditingVehicle(null);
       setEditingCustomer(null);
+      
+      setAlert({
+        type: 'success',
+        title: editingCustomer ? 'Customer Updated' : 'Customer Created',
+        message: `${customer.name} has been ${editingCustomer ? 'updated' : 'created'} successfully.`,
+      });
+    },
+    onError: (error) => {
+      setAlert({
+        type: 'error',
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'An error occurred',
+      });
     },
   });
 
@@ -117,7 +142,18 @@ export default function Customers() {
     mutationFn: (id: string) => customersService.remove(id),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ['customers'] });
-      setShowDeleteConfirm(null);
+      setAlert({
+        type: 'success',
+        title: 'Customer Deleted',
+        message: 'Customer has been deleted successfully.',
+      });
+    },
+    onError: (error) => {
+      setAlert({
+        type: 'error',
+        title: 'Error',
+        message: error instanceof Error ? error.message : 'Failed to delete customer',
+      });
     },
   });
 
@@ -716,24 +752,6 @@ export default function Customers() {
         </Modal>
       )}
 
-      {showDeleteConfirm && (
-        <Modal title="🗑️ Delete Customer" onClose={() => setShowDeleteConfirm(null)}>
-          <div className="space-y-4">
-            <div className="bg-red-50 border-l-4 border-red-500 rounded-lg p-4 flex gap-3">
-              <AlertCircle className="text-red-600 flex-shrink-0" size={24} />
-              <div>
-                <p className="text-sm font-semibold text-red-900">Are you sure?</p>
-                <p className="text-sm text-red-800 mt-1">You're about to delete <strong>{showDeleteConfirm.name}</strong>. This action cannot be undone.</p>
-              </div>
-            </div>
-            <div className="flex justify-end gap-3 pt-4">
-              <button onClick={() => setShowDeleteConfirm(null)} className="px-6 py-2.5 text-sm rounded-lg border-2 border-gray-300 text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors font-semibold">Cancel</button>
-              <button onClick={() => { if (showDeleteConfirm) deleteCustomerMutation.mutate(showDeleteConfirm.id); }} disabled={deleteCustomerMutation.isPending} className="px-6 py-2.5 text-sm rounded-lg text-white font-semibold bg-red-600 hover:bg-red-700 disabled:opacity-60 cursor-pointer transition-colors">{deleteCustomerMutation.isPending ? 'Deleting...' : 'Delete Customer'}</button>
-            </div>
-          </div>
-        </Modal>
-      )}
-
       <CreateWorkOrderModal isOpen={showWorkOrderModal} onClose={() => setShowWorkOrderModal(false)} customerId={selectedCustomer?.id} />
 
       {activeDropdown && createPortal(
@@ -741,9 +759,35 @@ export default function Customers() {
           <button onClick={(e) => { e.stopPropagation(); setShowWorkOrderModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Create Work Order</button>
           <button onClick={(e) => { e.stopPropagation(); paymentForm.reset({ amount: 0, method: 'cash', date: new Date().toISOString().split('T')[0] }); setShowPaymentModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Register Payment</button>
           <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(selectedCustomer); if (selectedCustomer) { customerForm.reset({ name: selectedCustomer.name, phone: selectedCustomer.phone }); setExistingVehicles(vehicles.map(v => ({ id: v.id, plate: v.plate, model: v.model, description: v.description })) || []); } setVehiclesToAdd([]); setEditingVehicle(null); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Edit</button>
-          <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(selectedCustomer); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">Delete</button>
+          <button onClick={(e) => { e.stopPropagation(); setConfirmDialog({ isOpen: true, title: 'Delete Customer', message: `Are you sure you want to delete ${selectedCustomer?.name}? This action cannot be undone.`, confirmText: 'Delete', isDangerous: true, onConfirm: () => { if (selectedCustomer) deleteCustomerMutation.mutate(selectedCustomer.id); setConfirmDialog(null); } }); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">Delete</button>
         </div>,
         document.body
+      )}
+
+      {/* Alert */}
+      {alert && (
+        <Alert
+          type={alert.type}
+          title={alert.title}
+          message={alert.message}
+          onClose={() => setAlert(null)}
+          autoClose={true}
+          autoCloseDuration={3000}
+        />
+      )}
+
+      {/* Confirm Dialog */}
+      {confirmDialog && (
+        <ConfirmDialog
+          isOpen={confirmDialog.isOpen}
+          title={confirmDialog.title}
+          message={confirmDialog.message}
+          confirmText={confirmDialog.confirmText}
+          isDangerous={confirmDialog.isDangerous}
+          onConfirm={confirmDialog.onConfirm}
+          onCancel={() => setConfirmDialog(null)}
+          isLoading={deleteCustomerMutation.isPending}
+        />
       )}
     </Layout>
   );
