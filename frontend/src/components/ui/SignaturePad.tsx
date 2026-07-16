@@ -1,5 +1,6 @@
 import React, { useRef, useState, useEffect } from 'react';
 import { X, RotateCcw } from 'lucide-react';
+import SignaturePadLib from 'signature_pad';
 
 interface SignaturePadProps {
   value?: string;
@@ -9,133 +10,65 @@ interface SignaturePadProps {
 
 export default function SignaturePad({ value, onChange, onClose }: SignaturePadProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const [isDrawing, setIsDrawing] = useState(false);
-  const [context, setContext] = useState<CanvasRenderingContext2D | null>(null);
+  const signaturePadRef = useRef<SignaturePadLib | null>(null);
+  const [isEmpty, setIsEmpty] = useState(true);
 
-  // Initialize canvas with proper scaling for high DPI displays
   useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !containerRef.current) return;
+    if (!canvas) return;
 
-    // Get the actual display size of the canvas
-    const width = containerRef.current.clientWidth || 400;
-    const height = 150;
+    // Initialize SignaturePad
+    const signaturePad = new SignaturePadLib(canvas, {
+      backgroundColor: 'rgb(255, 255, 255)',
+      penColor: 'rgb(0, 0, 0)',
+      minWidth: 0.5,
+      maxWidth: 2.5,
+      throttle: 16,
+      minDistance: 5,
+    });
 
-    // Set display size (CSS pixels)
-    canvas.style.width = width + 'px';
-    canvas.style.height = height + 'px';
+    signaturePadRef.current = signaturePad;
 
-    // Set internal resolution (actual pixels)
-    const dpr = window.devicePixelRatio || 1;
-    canvas.width = width * dpr;
-    canvas.height = height * dpr;
+    // Handle empty state changes
+    canvas.addEventListener('endStroke', () => {
+      setIsEmpty(signaturePad.isEmpty());
+      onChange(signaturePad.toDataURL('image/png'));
+    });
 
-    const ctx = canvas.getContext('2d');
-    if (ctx) {
-      // Scale context for high DPI
-      ctx.scale(dpr, dpr);
-      
-      // Set default drawing settings
-      ctx.lineCap = 'round';
-      ctx.lineJoin = 'round';
-      ctx.lineWidth = 2;
-      ctx.strokeStyle = '#000000';
+    // Load existing signature if provided
+    if (value) {
+      signaturePad.fromDataURL(value, { ratio: window.devicePixelRatio || 1 });
+      setIsEmpty(false);
+    }
 
-      setContext(ctx);
+    // Resize canvas to fit container
+    const resizeCanvas = () => {
+      const ratio = Math.max(window.devicePixelRatio || 1, 1);
+      canvas.width = canvas.offsetWidth * ratio;
+      canvas.height = canvas.offsetHeight * ratio;
+      canvas.getContext('2d')?.scale(ratio, ratio);
 
-      // Load existing signature if provided
+      // Redraw signature if exists
       if (value) {
-        const img = new Image();
-        img.src = value;
-        img.onload = () => {
-          ctx.clearRect(0, 0, width, height);
-          ctx.drawImage(img, 0, 0, width, height);
-        };
+        signaturePad.fromDataURL(value, { ratio });
       }
-    }
-  }, [value]);
+    };
 
-  const getCoordinates = (
-    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    const canvas = canvasRef.current;
-    if (!canvas) return null;
+    resizeCanvas();
+    window.addEventListener('resize', resizeCanvas);
 
-    const rect = canvas.getBoundingClientRect();
-    const dpr = window.devicePixelRatio || 1;
-
-    if ('touches' in e) {
-      // Touch event
-      const touch = e.touches[0];
-      return {
-        x: (touch.clientX - rect.left) / dpr,
-        y: (touch.clientY - rect.top) / dpr,
-      };
-    } else {
-      // Mouse event
-      return {
-        x: (e.clientX - rect.left) / dpr,
-        y: (e.clientY - rect.top) / dpr,
-      };
-    }
-  };
-
-  const startDrawing = (
-    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!context) return;
-
-    const coords = getCoordinates(e);
-    if (!coords) return;
-
-    context.beginPath();
-    context.moveTo(coords.x, coords.y);
-    setIsDrawing(true);
-  };
-
-  const draw = (
-    e: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    e.preventDefault();
-    e.stopPropagation();
-
-    if (!isDrawing || !context) return;
-
-    const coords = getCoordinates(e);
-    if (!coords) return;
-
-    context.lineTo(coords.x, coords.y);
-    context.stroke();
-  };
-
-  const stopDrawing = (
-    e?: React.MouseEvent<HTMLCanvasElement> | React.TouchEvent<HTMLCanvasElement>
-  ) => {
-    e?.preventDefault();
-    e?.stopPropagation();
-
-    setIsDrawing(false);
-    if (context) {
-      context.closePath();
-    }
-
-    // Save the canvas as image
-    const canvas = canvasRef.current;
-    if (canvas) {
-      onChange(canvas.toDataURL('image/png'));
-    }
-  };
+    return () => {
+      window.removeEventListener('resize', resizeCanvas);
+      canvas.removeEventListener('endStroke', () => {});
+    };
+  }, [value, onChange]);
 
   const clearSignature = () => {
-    const canvas = canvasRef.current;
-    if (!canvas || !context) return;
-
-    context.clearRect(0, 0, canvas.width, canvas.height);
-    onChange('');
+    if (signaturePadRef.current) {
+      signaturePadRef.current.clear();
+      setIsEmpty(true);
+      onChange('');
+    }
   };
 
   return (
@@ -152,23 +85,15 @@ export default function SignaturePad({ value, onChange, onClose }: SignaturePadP
           </button>
         )}
       </div>
-      <div
-        ref={containerRef}
-        className="w-full border-2 border-gray-300 rounded-lg bg-white overflow-hidden"
-        style={{ touchAction: 'none' }}
-      >
+      <div className="border-2 border-gray-300 rounded-lg overflow-hidden bg-white" style={{ height: '200px' }}>
         <canvas
           ref={canvasRef}
-          onMouseDown={startDrawing}
-          onMouseMove={draw}
-          onMouseUp={stopDrawing}
-          onMouseLeave={stopDrawing}
-          onTouchStart={startDrawing}
-          onTouchMove={draw}
-          onTouchEnd={stopDrawing}
-          onTouchCancel={stopDrawing}
-          className="block w-full bg-white"
-          style={{ cursor: 'crosshair', display: 'block' }}
+          className="w-full h-full touch-none"
+          style={{
+            display: 'block',
+            cursor: 'crosshair',
+            WebkitTouchCallout: 'none',
+          } as React.CSSProperties}
         />
       </div>
       <div className="flex gap-2">
