@@ -20,6 +20,29 @@ export class WorkOrdersService {
   async create(dto: CreateWorkOrderDto, userId: string): Promise<WorkOrder> {
     const taxRate = this.configService.get<number>('TAX_RATE', 0.0875);
 
+    // Check if vehicle already has an open work order (new or in_progress)
+    const openOrder = await this.workOrdersRepo.findOne({
+      where: {
+        vehicle_id: dto.vehicle_id,
+        delivery_status: 'new',
+      },
+    });
+
+    if (openOrder) {
+      throw new BadRequestException(`Vehicle already has an open work order #${openOrder.order_number}. Add items to the existing order or mark it ready/picked up before creating a new one.`);
+    }
+
+    const inProgressOrder = await this.workOrdersRepo.findOne({
+      where: {
+        vehicle_id: dto.vehicle_id,
+        delivery_status: 'in_progress',
+      },
+    });
+
+    if (inProgressOrder) {
+      throw new BadRequestException(`Vehicle already has a work order in progress #${inProgressOrder.order_number}. Add items to the existing order or mark it ready/picked up before creating a new one.`);
+    }
+
     // Generate order_number: find the max order_number for this user and increment
     const maxOrder = await this.workOrdersRepo
       .createQueryBuilder('wo')

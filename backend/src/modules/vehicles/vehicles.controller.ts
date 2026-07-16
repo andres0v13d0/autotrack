@@ -61,8 +61,8 @@ export class VehiclesController {
   }
 
   @Delete(':id')
-  @Roles('admin')
-  @ApiOperation({ summary: 'Delete a vehicle (admin only)' })
+  @Roles('admin', 'front_desk')
+  @ApiOperation({ summary: 'Delete a vehicle' })
   remove(@Param('id') id: string) {
     return this.service.remove(id);
   }

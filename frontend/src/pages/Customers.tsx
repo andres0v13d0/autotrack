@@ -88,6 +88,28 @@ export default function Customers() {
 
   const createCustomerMutation = useMutation({
     mutationFn: async (values: any) => {
+      // VALIDAR todas las placas ANTES de crear el cliente
+      const allVehicles = await vehiclesService.findAll();
+      
+      const vehiclesToValidate = [...vehiclesToAdd];
+      for (const vehicle of existingVehicles) {
+        vehiclesToValidate.push(vehicle);
+      }
+
+      // Verificar si alguna placa ya existe (y no pertenece al mismo cliente en edición)
+      for (const vehicle of vehiclesToValidate) {
+        const existingPlate = allVehicles.find(v => v.plate.toUpperCase() === vehicle.plate.toUpperCase());
+        if (existingPlate) {
+          // Si estamos editando un cliente, permitir su propia placa
+          if (editingCustomer && existingPlate.customer_id === editingCustomer.id) {
+            continue;
+          }
+          // Si no, lanzar error
+          throw new Error(`This plate (${vehicle.plate}) is already registered and belongs to another customer.`);
+        }
+      }
+
+      // Si todas las validaciones pasaron, crear/actualizar el cliente
       const customer = await (editingCustomer ? customersService.update(editingCustomer.id, values) : customersService.create(values));
       
       // Actualizar todos los vehículos existentes que fueron modificados
@@ -130,10 +152,30 @@ export default function Customers() {
       });
     },
     onError: (error) => {
+      let message = 'An error occurred';
+      
+      if (error instanceof Error) {
+        const errorMsg = error.message.toLowerCase();
+        if (errorMsg.includes('plate') && errorMsg.includes('already registered')) {
+          // Extraer la placa del mensaje si es posible
+          const match = error.message.match(/\(([^)]+)\)/);
+          const plate = match ? match[1] : 'this plate';
+          message = `${plate} is already registered to another customer. Please use a different plate.`;
+        } else if (errorMsg.includes('plate already')) {
+          message = 'This plate is already registered in the system. Please use a different plate.';
+        } else if (errorMsg.includes('conflict')) {
+          message = 'This plate is already registered in the system. Please use a different plate.';
+        } else if (errorMsg.includes('phone')) {
+          message = 'This phone number is already registered.';
+        } else {
+          message = error.message;
+        }
+      }
+      
       setAlert({
         type: 'error',
         title: 'Error',
-        message: error instanceof Error ? error.message : 'An error occurred',
+        message,
       });
     },
   });

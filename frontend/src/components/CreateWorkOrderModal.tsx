@@ -9,6 +9,7 @@ import { customersService } from '../services/customers.service';
 import { vehiclesService } from '../services/vehicles.service';
 import { workOrdersService } from '../services/workOrders.service';
 import type { Vehicle } from '../types';
+import { AlertCircle } from 'lucide-react';
 
 const createOrderSchema = z.object({
   vehicle_id: z.string().min(1, 'Select a vehicle'),
@@ -21,9 +22,10 @@ interface CreateWorkOrderModalProps {
   isOpen: boolean;
   onClose: () => void;
   customerId?: string;
+  onOpenExistingOrder?: (workOrderId: string) => void;
 }
 
-export default function CreateWorkOrderModal({ isOpen, onClose, customerId }: CreateWorkOrderModalProps) {
+export default function CreateWorkOrderModal({ isOpen, onClose, customerId, onOpenExistingOrder }: CreateWorkOrderModalProps) {
   if (!isOpen) return null;
   const qc = useQueryClient();
   const [vehicles, setVehicles] = useState<Vehicle[]>([]);
@@ -32,10 +34,14 @@ export default function CreateWorkOrderModal({ isOpen, onClose, customerId }: Cr
   const [customerSuggestions, setCustomerSuggestions] = useState<any[]>([]);
   const [selectedCustomer, setSelectedCustomer] = useState<any>(null);
   const [showCustomerDropdown, setShowCustomerDropdown] = useState(false);
+  const [showExistingOrderDialog, setShowExistingOrderDialog] = useState(false);
+  const [existingOrder, setExistingOrder] = useState<any>(null);
 
-  const { register, handleSubmit, reset, formState: { errors }, setValue } = useForm<CreateOrderValues>({
+  const { register, handleSubmit, reset, formState: { errors }, setValue, watch } = useForm<CreateOrderValues>({
     resolver: zodResolver(createOrderSchema),
   });
+
+  const vehicleIdValue = watch('vehicle_id');
 
   useEffect(() => {
     if (customerId) {
@@ -44,6 +50,13 @@ export default function CreateWorkOrderModal({ isOpen, onClose, customerId }: Cr
       resetForm();
     }
   }, [customerId, isOpen]);
+
+  // Check for open orders when vehicle changes
+  useEffect(() => {
+    if (vehicleIdValue) {
+      checkForOpenOrders(vehicleIdValue);
+    }
+  }, [vehicleIdValue]);
 
   const loadCustomerAndVehicles = async (cId: string) => {
     try {
@@ -74,6 +87,19 @@ export default function CreateWorkOrderModal({ isOpen, onClose, customerId }: Cr
       alert(`Error creating work order: ${error instanceof Error ? error.message : 'Unknown error'}`);
     },
   });
+
+  const checkForOpenOrders = async (vehicleId: string) => {
+    try {
+      const orders = await workOrdersService.getByVehicle(vehicleId);
+      const openOrder = orders.find(o => o.delivery_status === 'new' || o.delivery_status === 'in_progress');
+      if (openOrder) {
+        setExistingOrder(openOrder);
+        setShowExistingOrderDialog(true);
+      }
+    } catch (error) {
+      console.error('Error checking for open orders:', error);
+    }
+  };
 
   const handleSearchCustomer = async (query: string) => {
     setCustomerSearch(query);
@@ -256,6 +282,51 @@ export default function CreateWorkOrderModal({ isOpen, onClose, customerId }: Cr
           </button>
         </div>
       </form>
+
+      {/* Existing Order Dialog */}
+      {showExistingOrderDialog && existingOrder && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-md w-full p-6 space-y-4">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-100 rounded-lg">
+                <AlertCircle size={24} className="text-blue-600" />
+              </div>
+              <h3 className="text-lg font-bold text-slate-900">Open Work Order Found</h3>
+            </div>
+            
+            <p className="text-sm text-slate-600">
+              This vehicle already has an open work order <strong>#{existingOrder.order_number}</strong>. Would you like to add more work items to this existing order instead of creating a new one?
+            </p>
+
+            <div className="space-y-2 p-3 bg-blue-50 rounded-lg">
+              <p className="text-xs text-slate-600"><strong>Status:</strong> {existingOrder.delivery_status.replace(/_/g, ' ').toUpperCase()}</p>
+              <p className="text-xs text-slate-600"><strong>Items:</strong> {existingOrder.items?.length || 0}</p>
+            </div>
+
+            <div className="flex gap-3 pt-2">
+              <button
+                onClick={() => setShowExistingOrderDialog(false)}
+                className="flex-1 px-4 py-2 text-sm rounded-lg border border-gray-300 text-gray-600 hover:bg-gray-50 cursor-pointer transition-colors font-semibold"
+              >
+                Create New Order
+              </button>
+              <button
+                onClick={() => {
+                  setShowExistingOrderDialog(false);
+                  onClose();
+                  if (onOpenExistingOrder) {
+                    onOpenExistingOrder(existingOrder.id);
+                  }
+                }}
+                className="flex-1 px-4 py-2 text-sm rounded-lg text-white font-semibold hover:opacity-90 cursor-pointer transition-opacity"
+                style={{ backgroundColor: '#10b981' }}
+              >
+                Open Existing Order
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </Modal>
   );
 }

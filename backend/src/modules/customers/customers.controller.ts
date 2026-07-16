@@ -83,8 +83,8 @@ export class CustomersController {
   }
 
   @Delete(':id')
-  @Roles('admin')
-  @ApiOperation({ summary: 'Delete a customer (admin only)' })
+  @Roles('admin', 'front_desk')
+  @ApiOperation({ summary: 'Delete a customer' })
   remove(@Param('id') id: string, @Request() req: any) {
     if (!req.user?.id) {
       throw new BadRequestException('User not authenticated');

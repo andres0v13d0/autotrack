@@ -310,7 +310,14 @@ export default function WorkOrders() {
         onRowClick={(row) => handleViewOrder(row.id)}
       />
 
-      <CreateWorkOrderModal isOpen={showCreateModal} onClose={() => setShowCreateModal(false)} />
+      <CreateWorkOrderModal 
+        isOpen={showCreateModal} 
+        onClose={() => setShowCreateModal(false)}
+        onOpenExistingOrder={(workOrderId) => {
+          setShowCreateModal(false);
+          handleViewOrder(workOrderId);
+        }}
+      />
 
       {/* Work Order Detail Modal */}
       {showDetailModal && selectedOrder && (
