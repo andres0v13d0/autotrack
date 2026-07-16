@@ -5,12 +5,12 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Plus, MoreVertical, Phone, MapPin, Truck, AlertCircle, User, CreditCard, Wrench, Edit2, X, Check } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import { createPortal } from 'react-dom';
 import Layout from '../components/Layout';
 import Field, { inputCls } from '../components/ui/Field';
 import Modal from '../components/ui/Modal';
+import CreateWorkOrderModal from '../components/CreateWorkOrderModal';
 import { customersService } from '../services/customers.service';
 import { vehiclesService } from '../services/vehicles.service';
 import { paymentsService } from '../services/payments.service';
@@ -36,13 +36,13 @@ const paymentSchema = z.object({
 export default function Customers() {
   const { t } = useTranslation();
   const qc = useQueryClient();
-  const navigate = useNavigate();
   
   const [searchQuery, setSearchQuery] = useState('');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [showDetailModal, setShowDetailModal] = useState(false);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState<Customer | null>(null);
+  const [showWorkOrderModal, setShowWorkOrderModal] = useState(false);
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null);
   
   const [selectedCustomer, setSelectedCustomer] = useState<Customer | null>(null);
@@ -231,9 +231,9 @@ export default function Customers() {
                           const rect = btn.getBoundingClientRect();
                           setDropdownPos({ top: rect.bottom + 8, left: rect.left - 140 });
                         }
+                        setSelectedCustomer(customer);
                       }
                       setActiveDropdown(activeDropdown === customer.id ? null : customer.id); 
-                      setSelectedCustomer(customer); 
                     }} 
                     className="p-2 hover:bg-gray-800 rounded-lg transition-colors cursor-pointer"
                   >
@@ -625,9 +625,11 @@ export default function Customers() {
         </Modal>
       )}
 
+      <CreateWorkOrderModal isOpen={showWorkOrderModal} onClose={() => setShowWorkOrderModal(false)} customerId={selectedCustomer?.id} />
+
       {activeDropdown && createPortal(
         <div className="fixed bg-white rounded-xl shadow-2xl overflow-hidden" onClick={(e) => e.stopPropagation()} style={{ top: `${dropdownPos.top}px`, left: `${dropdownPos.left}px`, pointerEvents: 'auto', zIndex: 99999 }}>
-          <button onClick={(e) => { e.stopPropagation(); navigate('/work-orders/new', { state: { customer_id: selectedCustomer?.id } }); setShowDetailModal(false); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Create Work Order</button>
+          <button onClick={(e) => { e.stopPropagation(); setShowWorkOrderModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Create Work Order</button>
           <button onClick={(e) => { e.stopPropagation(); paymentForm.reset({ amount: 0, method: 'cash', date: new Date().toISOString().split('T')[0] }); setShowPaymentModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer whitespace-nowrap">Register Payment</button>
           <button onClick={(e) => { e.stopPropagation(); setEditingCustomer(selectedCustomer); if (selectedCustomer) { customerForm.reset({ name: selectedCustomer.name, phone: selectedCustomer.phone }); setExistingVehicles(vehicles.map(v => ({ id: v.id, plate: v.plate, model: v.model, description: v.description })) || []); } setVehiclesToAdd([]); setEditingVehicle(null); setShowCreateModal(true); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-gray-700 hover:bg-gray-50 transition-colors border-b border-gray-100 cursor-pointer">Edit</button>
           <button onClick={(e) => { e.stopPropagation(); setShowDeleteConfirm(selectedCustomer); setActiveDropdown(null); }} className="w-full text-left px-3 py-2 text-sm text-red-600 hover:bg-red-50 transition-colors cursor-pointer whitespace-nowrap">Delete</button>
